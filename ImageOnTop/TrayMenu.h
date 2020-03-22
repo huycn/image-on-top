@@ -7,9 +7,10 @@ class TrayMenu : public Menu
 {
 public:
 	TrayMenu(HINSTANCE hInstance);
-	void checkItem(int idCommand, bool checked);
-	bool isChecked(int idCommand) const;
-	void track(HWND msgRecv, const POINT &pos, int flags);
+
+	virtual void checkItem(int idCommand, bool checked) override;
+	virtual bool isChecked(int idCommand) const override;
+	virtual void track(HWND msgRecv, const POINT &pos, int flags) override;
 
 private:
 	HMENU _trayMenu;

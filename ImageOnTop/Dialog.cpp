@@ -1,8 +1,7 @@
 #include "Dialog.h"
-#include "WndMessage.h"
-#include "WndClass.h"
-#include "WndManager.h"
-#include "ImageWnd.h"
+#include "WindowClass.h"
+#include "ImageManager.h"
+#include "ImageWidget.h"
 #include "Exception.h"
 
 #include <iomanip>
@@ -46,7 +45,7 @@ std::shared_ptr<Dialog> Dialog::_instance;
 int Dialog::lastSelectedEntry = -1;
 
 std::shared_ptr<Dialog>
-Dialog::instance(const std::shared_ptr<WndManager> &wndMgr) {
+Dialog::instance(const std::shared_ptr<ImageManager> &wndMgr) {
 	if (_instance == NULL) {
 		_instance = std::shared_ptr<Dialog>(new Dialog(wndMgr));
 	}
@@ -58,10 +57,10 @@ Dialog::instance() {
 	return _instance;
 }
 
-Dialog::Dialog(const std::shared_ptr<WndManager> &wndMgr)
+Dialog::Dialog(const std::shared_ptr<ImageManager> &wndMgr)
 : _wndMgr(wndMgr)
 {
-	std::shared_ptr<WndClass> wndClass = _wndMgr->getWndClass();
+	std::shared_ptr<WindowClass> wndClass = _wndMgr->getWndClass();
 	_handle = CreateDialogParam(wndClass->hInstance(), MAKEINTRESOURCE(IDD_DIALOG1), _wndMgr->getHandle(), &Dialog::dialogProc, NULL);
 	if (_handle == NULL) {
 		throw RuntimeError(TEXT("Can't create dialog"));
@@ -97,8 +96,12 @@ Dialog::Dialog(const std::shared_ptr<WndManager> &wndMgr)
 	updateImageList();
 }
 
-Dialog::~Dialog()
-{
+Dialog::~Dialog() {
+}
+
+int
+Dialog::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
+	return 0;
 }
 
 void
@@ -129,7 +132,7 @@ Dialog::enableItems(bool enable, const int ids[])
 void
 Dialog::updateImageList()
 {
-	WndManager::ImageList imgList;
+	ImageManager::ImageList imgList;
 	_wndMgr->getEntriesList(imgList);
 	HWND hListItem = GetDlgItem(_handle, IDC_LIST_IMAGES);
 	for (unsigned i=0; i<imgList.size(); ++i) {
@@ -162,7 +165,7 @@ Dialog::updateItemsState() {
 		EnableWindow(hSlider, hasAlpha ? TRUE : FALSE);
 		SendMessage(hSlider, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)entry->transparencyValue());
 		SendDlgItemMessage(_handle, IDC_CHECK_CLKTHROUGH, BM_SETCHECK, (WPARAM)(entry->isClickThrough() ? BST_CHECKED : BST_UNCHECKED), 0);
-		updateWndPos(entry->left(), entry->top());
+		updateSelectedItemOrigin(entry->left(), entry->top());
 		EnableWindow(btnRemove, TRUE);
 		enableItems(true, imgPropGrpIDs);
 	}
@@ -173,7 +176,7 @@ Dialog::updateItemsState() {
 }
 
 void
-Dialog::updateWndPos(int x, int y) {
+Dialog::updateSelectedItemOrigin(int x, int y) {
 	wchar_t buffer[50];
 	wsprintf(buffer, TEXT("%d"), x);
 	setItemText(IDC_EDIT_POSLEFT, buffer);
@@ -187,7 +190,7 @@ Dialog::show(bool)
 	ShowWindow(_handle, SW_SHOW);
 	SetForegroundWindow(_handle);
 
-	WndManager::ImageList imgList;
+	ImageManager::ImageList imgList;
 	_wndMgr->getEntriesList(imgList);
 	for (unsigned i=0; i<imgList.size(); ++i) {
 		imgList[i]->enableClickThrough(false);
@@ -233,7 +236,7 @@ Dialog::dialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			break;
 		case WM_CLOSE:
 		{
-			WndManager::ImageList imgList;
+			ImageManager::ImageList imgList;
 			_instance->_wndMgr->getEntriesList(imgList);
 			for (unsigned i=0; i<imgList.size(); ++i) {
 				imgList[i]->enableClickThrough(true);

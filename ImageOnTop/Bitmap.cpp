@@ -41,25 +41,6 @@ getWindowsError(int err)
 	} \
 } while(0)
 
-//namespace {
-//	void multApha(FIBITMAP *dib) {
-//		if (FreeImage_GetBPP(dib) == 32) {
-//			for(unsigned y = 0; y < FreeImage_GetHeight(dib); ++y) {
-//				BYTE *bits = FreeImage_GetScanLine(dib, y);
-//				for(unsigned x = 0; x < FreeImage_GetWidth(dib); ++x) {
-//					int alpha = bits[FI_RGBA_ALPHA];
-//					bits[FI_RGBA_RED] = static_cast<BYTE>(bits[FI_RGBA_RED] * alpha / 255);
-//					bits[FI_RGBA_GREEN] = static_cast<BYTE>(bits[FI_RGBA_GREEN] * alpha / 255);
-//					bits[FI_RGBA_BLUE] = static_cast<BYTE>(bits[FI_RGBA_BLUE] * alpha / 255);
-//					// jump to next pixel
-//					bits += 4;
-//				}
-//			}
-//		}
-//	}
-//}
-
-
 namespace Swingl {
 
 Bitmap::Bitmap(const std::wstring& filePath) {
@@ -73,18 +54,12 @@ Bitmap::Bitmap(const std::wstring& filePath) {
 	CHECK(decoder->GetFrame(0, &frame));
 	CHECK(frame->GetSize(&_width, &_height));
 
+	WICPixelFormatGUID format;
+	CHECK(frame->GetPixelFormat(&format));
+
 	CComPtr<IWICFormatConverter> converter;
 	CHECK(factory->CreateFormatConverter(&converter));
-
-	// Initialize the format converter.
-	CHECK(converter->Initialize(
-		frame,                  	 // Input source to convert
-		GUID_WICPixelFormat32bppPBGRA,   // Destination pixel format
-		WICBitmapDitherTypeNone,         // Specified dither pattern
-		NULL,                            // Specify a particular palette
-		0.f,                             // Alpha threshold
-		WICBitmapPaletteTypeCustom       // Palette translation type
-	));
+	CHECK(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeCustom));
 	_source = converter;
 }
 
@@ -92,7 +67,7 @@ Bitmap::~Bitmap() {
 }
 
 HBITMAP
-Bitmap::createDIBitmap(HDC hDC, bool* isAlphaPremultiplied) const {
+Bitmap::createDIBitmap(HDC hDC) const {
 
 	HBITMAP result = 0;
 
@@ -115,10 +90,6 @@ Bitmap::createDIBitmap(HDC hDC, bool* isAlphaPremultiplied) const {
 
 	BITMAPINFO bi;
 	bi.bmiHeader = bh;
-
-	if (isAlphaPremultiplied != nullptr) {
-		*isAlphaPremultiplied = false; // TODO
-	}
 
 	return CreateDIBitmap(hDC, &bh, CBM_INIT, buffer.data(), &bi, DIB_RGB_COLORS);
 }

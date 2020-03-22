@@ -1,6 +1,6 @@
 #include <windows.h>
 #include "resource.h"
-#include "WndClass.h"
+#include "WindowClass.h"
 #include "Exception.h"
 
 #pragma comment(linker, \
@@ -16,7 +16,7 @@
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
-	Swingl::WndClass wndClass(hInstance);
+	Swingl::WindowClass wndClass(hInstance);
 	if (HWND hPrevWnd = FindWindow(wndClass.name(), NULL)) { 
 		return 0;
 	}
@@ -32,6 +32,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 	}
 	catch (...) {
 	}
-	//FreeImage_DeInitialise();
-    return 0;
+
+	return 0;
 }

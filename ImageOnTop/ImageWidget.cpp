@@ -1,17 +1,14 @@
-#include "ImageWnd.h"
-#include "WndMessage.h"
-#include "WndClass.h"
+#include "ImageWidget.h"
+#include "WindowClass.h"
 #include "Dialog.h"
 #include "Bitmap.h"
 #include "Exception.h"
 
-#include <winuser.h>
-
 namespace Swingl {
 
-ImageWnd::ObjList ImageWnd::_imgObj;
+ImageWidget::ObjList ImageWidget::_imgObj;
 
-ImageWnd::ImageWnd(WndClass &wndClass)
+ImageWidget::ImageWidget(WindowClass &wndClass)
 {
 	_mouseLeftHold = false;
 	_mousePos = { 0 };
@@ -31,7 +28,7 @@ ImageWnd::ImageWnd(WndClass &wndClass)
 	_imgObj.insert(this);
 }
 
-ImageWnd::~ImageWnd()
+ImageWidget::~ImageWidget()
 {
 	if (_handle != NULL) {
 		DestroyWindow(_handle);
@@ -41,7 +38,7 @@ ImageWnd::~ImageWnd()
 }
 
 bool
-ImageWnd::loadImage(const std::wstring &fileName, bool update) {
+ImageWidget::loadImage(const std::wstring &fileName, bool update) {
 	for (ObjList::const_iterator it = _imgObj.begin(); it != _imgObj.end(); ++it) {
 		if (*it != this && (*it)->fileName() == fileName) {
 			_bitmap = (*it)->getBitmap();
@@ -63,7 +60,7 @@ ImageWnd::loadImage(const std::wstring &fileName, bool update) {
 }
 
 bool
-ImageWnd::loadByDescriptor(const ImageDescriptor &desctr) {
+ImageWidget::loadByDescriptor(const ImageDescriptor &desctr) {
 	std::wstring fileName = desctr.fileName();
 	if (fileName.size() > 0 && loadImage(fileName, false)) {
 		*(static_cast<ImageDescriptor *>(this)) = desctr;
@@ -75,35 +72,35 @@ ImageWnd::loadByDescriptor(const ImageDescriptor &desctr) {
 }
 
 unsigned int
-ImageWnd::width() const {
+ImageWidget::width() const {
 	return _bitmap->width();
 }
 
 unsigned int
-ImageWnd::height() const {
+ImageWidget::height() const {
 	return _bitmap->height();
 }
 
 void
-ImageWnd::enableTransparency(bool enable) {
+ImageWidget::enableTransparency(bool enable) {
 	ImageDescriptor::enableTransparency(enable);
 	updateImage();
 }
 
 void
-ImageWnd::setTransparency(bool enable, unsigned char value) {
+ImageWidget::setTransparency(bool enable, unsigned char value) {
 	ImageDescriptor::setTransparency(enable, value);
 	updateImage();
 }
 
 void
-ImageWnd::enableClickThrough(bool enable) {
+ImageWidget::enableClickThrough(bool enable) {
 	ImageDescriptor::enableClickThrough(enable);
 	updateClickThroughState();
 }
 
 void
-ImageWnd::updateClickThroughState() {
+ImageWidget::updateClickThroughState() {
 	LONG wndExStyle = GetWindowLong(_handle, GWL_EXSTYLE);
 	if (_isClickThrough) {
 		SetWindowLong(_handle, GWL_EXSTYLE, wndExStyle | WS_EX_TRANSPARENT);
@@ -114,19 +111,19 @@ ImageWnd::updateClickThroughState() {
 }
 
 void
-ImageWnd::setPosition(int left, int top) {
+ImageWidget::setPosition(int left, int top) {
 	ImageDescriptor::setPosition(left, top);
 	SetWindowPos(_handle, 0, _posLeft, _posTop, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
 }
 
 void
-ImageWnd::fromString(const std::wstring &desc) {
+ImageWidget::fromString(const std::wstring &desc) {
 	ImageDescriptor desctr(desc);
 	loadByDescriptor(desctr);
 }
 
 void
-ImageWnd::updateImage() {
+ImageWidget::updateImage() {
 	if (_bitmap == NULL) return;
 	POINT destPt;
 	destPt.x = left();
@@ -136,8 +133,7 @@ ImageWnd::updateImage() {
 	wndSize.cy = height();
 	HDC hDC = GetDC(_handle);
 
-	bool withAlpha = false;
-	HBITMAP bitmap = _bitmap->createDIBitmap(hDC, &withAlpha);
+	HBITMAP bitmap = _bitmap->createDIBitmap(hDC);
 	
 	HDC hMemDC = CreateCompatibleDC(hDC);
 	HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemDC, bitmap);
@@ -146,7 +142,7 @@ ImageWnd::updateImage() {
 	blendFunc.BlendOp = AC_SRC_OVER;
 	blendFunc.BlendFlags = 0;
 	blendFunc.SourceConstantAlpha = _transpEnabled ? (255 - _transpValue) : 255;
-	blendFunc.AlphaFormat = withAlpha ? AC_SRC_ALPHA : 0;
+	blendFunc.AlphaFormat = AC_SRC_ALPHA;
 
 	UpdateLayeredWindow(_handle, NULL, &destPt, &wndSize, hMemDC, &srcPt, 0, &blendFunc, ULW_ALPHA);
 	
@@ -157,20 +153,25 @@ ImageWnd::updateImage() {
 }
 
 void
-ImageWnd::move(int x, int y) {
+ImageWidget::move(int x, int y) {
 	setPosition(x, y);
 	std::shared_ptr<Dialog> dialog = Dialog::instance();
 	if (dialog != NULL) {
 		std::shared_ptr<ImageDescriptor> entry = dialog->getSelectedEntry();
 		if (entry.get() == this) {
-			dialog->updateWndPos(x, y);
+			dialog->updateSelectedItemOrigin(x, y);
 		}
 	}
 }
 
+void
+ImageWidget::show(bool value) {
+	ShowWindow(_handle, value ? SW_SHOWNOACTIVATE : SW_HIDE);
+}
+
 int
-ImageWnd::wndProc(const WndMessage &wm) {
-	switch (wm.msg) {
+ImageWidget::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
+	switch (msg) {
 		case WM_PAINT:
 		{
 			PAINTSTRUCT  ps;
@@ -201,7 +202,7 @@ ImageWnd::wndProc(const WndMessage &wm) {
 			}
 			break;
 		default:
-			return (int)DefWindowProc(_handle, wm.msg, wm.wParam, wm.lParam);
+			return (int)DefWindowProc(_handle, msg, wParam, lParam);
 	}
 	return 0;
 }

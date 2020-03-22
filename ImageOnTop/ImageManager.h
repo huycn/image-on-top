@@ -7,8 +7,7 @@
 
 namespace Swingl {
 
-class WndMessage;
-class WndClass;
+class WindowClass;
 class ImageDescriptor;
 
 enum class TransMode {
@@ -18,13 +17,13 @@ enum class TransMode {
 };
 
 // This class create un message window to process SysTray messages
-class WndManager : public Window {
+class ImageManager : public Window {
 public:
-	~WndManager();
+	virtual ~ImageManager();
 
 	typedef std::vector<std::shared_ptr<ImageDescriptor> > ImageList;
 
-	std::shared_ptr<WndClass> getWndClass() const {return _wndClass;}
+	std::shared_ptr<WindowClass> getWndClass() const {return _wndClass;}
 	TransMode transMode() const {return _transMode;}
 	double transDelay() const {return _transDelay;}
 	double transDuration() const {return _transDuration;}
@@ -37,14 +36,14 @@ public:
 	void savePrefToRegistry() const;
 
 protected:
-	friend class WndClass;
+	friend class WindowClass;
 
 	static const int kIconSysTrayCommand = WM_USER + 50;
 	static const int framesPerSecond = 10;
 
-	WndManager(const std::shared_ptr<WndClass> &wndClass);
+	ImageManager(const std::shared_ptr<WindowClass> &wndClass);
 
-	int wndProc(const WndMessage &m);
+	virtual int wndProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
 
 	void transStart();
 	void transNextFrame();
@@ -52,7 +51,7 @@ protected:
 private:
 	void openDialog();
 
-	std::shared_ptr<WndClass> _wndClass;
+	std::shared_ptr<WindowClass> _wndClass;
 	std::shared_ptr<TrayMenu> _trayMenu;
     TransMode _transMode;
 	double _transDelay;

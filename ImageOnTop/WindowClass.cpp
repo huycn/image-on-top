@@ -1,15 +1,14 @@
-#include "WndClass.h"
-#include "WndManager.h"
-#include "WndMessage.h"
+#include "WindowClass.h"
+#include "ImageManager.h"
 #include "Window.h"
 #include "TemplateUtilities.h"
 #include "Exception.h"
 
 namespace Swingl {
 
-HINSTANCE WndClass::_hInstance = NULL;
+HINSTANCE WindowClass::_hInstance = NULL;
 
-WndClass::WndClass(HINSTANCE hInstance)
+WindowClass::WindowClass(HINSTANCE hInstance)
 {
 	wchar_t buffer[50];
 	LoadString(hInstance, IDS_APP_CLASS, buffer, 20);
@@ -20,17 +19,27 @@ WndClass::WndClass(HINSTANCE hInstance)
 	_hasInit = false;
 }
 
-WndClass::~WndClass()
+WindowClass::~WindowClass()
 {
 }
 
+const wchar_t*
+WindowClass::name() const {
+	return _name.c_str();
+}
+
+const wchar_t*
+WindowClass::appName() const {
+	return _appName.c_str();
+}
+
 void
-WndClass::init() {
+WindowClass::init() {
 	if (!_hasInit) {
 		WNDCLASSEX wc;
 		memset(&wc, 0, sizeof(WNDCLASSEX));
 		wc.cbSize        = sizeof(WNDCLASSEX);
-		wc.lpfnWndProc   = &WndClass::sWndProc;
+		wc.lpfnWndProc   = &WindowClass::sWndProc;
 		wc.hInstance     = _hInstance;
 		wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
 		wc.lpszClassName = name();
@@ -41,8 +50,8 @@ WndClass::init() {
 		}
 
 		try {
-			std::shared_ptr<WndClass> myPtr = std::shared_ptr<WndClass>(this, DummyDeleter<WndClass>());
-			_wndManager.reset(new WndManager(myPtr));
+			std::shared_ptr<WindowClass> myPtr = std::shared_ptr<WindowClass>(this, DummyDeleter<WindowClass>());
+			_wndManager.reset(new ImageManager(myPtr));
 		}
 		catch (...) {
 			throw;
@@ -53,7 +62,7 @@ WndClass::init() {
 }
 
 int
-WndClass::run()
+WindowClass::run()
 {
 	init();
 
@@ -64,7 +73,7 @@ WndClass::run()
 	niData.uID = 1000;
 	niData.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
 	niData.hIcon = (HICON)LoadImage(hInstance(), MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON, 16, 16, LR_SHARED);
-	niData.uCallbackMessage = WndManager::kIconSysTrayCommand;
+	niData.uCallbackMessage = ImageManager::kIconSysTrayCommand;
 	wcscpy_s(niData.szTip, appName());
 	Shell_NotifyIcon(NIM_ADD, &niData);
 
@@ -80,32 +89,36 @@ WndClass::run()
 }
 
 void
-WndClass::quit()
+WindowClass::quit()
 {
 	_wndManager->savePrefToRegistry();
 	_wndManager.reset();
 }
 
 HICON
-WndClass::getIcon() const
+WindowClass::getIcon() const
 {
 	return static_cast<HICON>(LoadImage(hInstance(), MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON, 16, 16, LR_SHARED));
 }
 
 LRESULT CALLBACK
-WndClass::sWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+WindowClass::sWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	LONG_PTR winPtr = GetWindowLongPtr(hwnd, GWLP_USERDATA);
 	if (winPtr != 0) {
 		Window *win = reinterpret_cast<Window *>(winPtr);
-		WndMessage message(msg, wParam, lParam);
-		return win->wndProc(message);
+		return win->wndProc(msg, wParam, lParam);
 	}
 	else if (msg == WM_DESTROY) {
 		PostQuitMessage(0);
 		return 0;
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+HINSTANCE
+WindowClass::hInstance() {
+	return _hInstance;
 }
 
 }

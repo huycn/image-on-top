@@ -16,7 +16,7 @@ public:
     unsigned int width() const { return _width; }
     unsigned int height() const { return _height; }
 
-    HBITMAP createDIBitmap(HDC hDC, bool* isAlphaPremultiplied) const;
+    HBITMAP createDIBitmap(HDC hDC) const;
 
 private:
     CComPtr<IWICBitmapSource> _source;

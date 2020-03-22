@@ -6,13 +6,15 @@ namespace Swingl {
 
 class Menu {
 public:
-	virtual ~Menu()	{
-		if (_handle != NULL) DestroyMenu(_handle);
-	}
+	explicit Menu(HMENU handle);
+	virtual ~Menu();
 
-	virtual void checkItem(int idCommand, bool checked) {;}
-	virtual bool isChecked(int idCommand) const {return false;}
-	virtual void track(HWND msgRecv, const POINT &pos, int flags) {;}
+	Menu(const Menu&) = delete;
+	Menu& operator=(const Menu&) = delete;
+
+	virtual void checkItem(int idCommand, bool checked);
+	virtual bool isChecked(int idCommand) const;
+	virtual void track(HWND msgRecv, const POINT& pos, int flags);
 
 protected:
 	HMENU _handle;

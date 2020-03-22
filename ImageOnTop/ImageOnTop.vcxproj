@@ -158,27 +158,27 @@
     <ClCompile Include="Bitmap.cpp" />
     <ClCompile Include="Dialog.cpp" />
     <ClCompile Include="ImageDescriptor.cpp" />
-    <ClCompile Include="ImageWnd.cpp" />
+    <ClCompile Include="ImageWidget.cpp" />
+    <ClCompile Include="Menu.cpp" />
     <ClCompile Include="TrayMenu.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="WinMain.cpp" />
-    <ClCompile Include="WndClass.cpp" />
-    <ClCompile Include="WndManager.cpp" />
+    <ClCompile Include="WindowClass.cpp" />
+    <ClCompile Include="ImageManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Bitmap.h" />
     <ClInclude Include="Dialog.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="ImageDescriptor.h" />
-    <ClInclude Include="ImageWnd.h" />
+    <ClInclude Include="ImageWidget.h" />
     <ClInclude Include="Menu.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="TemplateUtilities.h" />
     <ClInclude Include="TrayMenu.h" />
     <ClInclude Include="Window.h" />
-    <ClInclude Include="WndClass.h" />
-    <ClInclude Include="WndManager.h" />
-    <ClInclude Include="WndMessage.h" />
+    <ClInclude Include="WindowClass.h" />
+    <ClInclude Include="ImageManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="icon1.ico" />

@@ -6,20 +6,23 @@
 namespace Swingl {
 
 class Window;
-class WndManager;
+class ImageManager;
 
-class WndClass {
+class WindowClass {
 public:
-	WndClass(HINSTANCE hInstance);
-	~WndClass();
+	WindowClass(HINSTANCE hInstance);
+	~WindowClass();
 
-	static HINSTANCE hInstance() {return _hInstance;}
-	const wchar_t * name() const {return _name.c_str();}
-	const wchar_t * appName() const {return _appName.c_str();}
+	WindowClass(const WindowClass&) = delete;
+	WindowClass& operator=(const WindowClass&) = delete;
+
+	const wchar_t* name() const;
+	const wchar_t* appName() const;
 	HICON getIcon() const;
 	int run();
 	void quit();
 
+	static HINSTANCE hInstance();
 	static LRESULT CALLBACK sWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 protected:
@@ -29,7 +32,7 @@ protected:
 	std::wstring _name;
 	std::wstring _appName;
 	bool _hasInit;
-	std::shared_ptr<WndManager> _wndManager;
+	std::unique_ptr<ImageManager> _wndManager;
 };
 
 }

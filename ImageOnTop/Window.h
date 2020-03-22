@@ -3,22 +3,22 @@
 
 namespace Swingl {
 
-class WndMessage;
-
 class Window {
 public:
 	virtual ~Window();
-	HWND getHandle() {return _handle;}
 
-	virtual void show(bool value = true) {
-		ShowWindow(_handle, value ? SW_SHOW : SW_HIDE);
-	}
+	Window(const Window&) = delete;
+	Window& operator=(const Window&) = delete;
+
+	HWND getHandle() { return _handle; }
+
+	virtual void show(bool value = true);
 
 protected:
-	friend class WndClass;
+	friend class WindowClass;
 
-	Window();
-	virtual int wndProc(const WndMessage &) = 0;
+	Window(HWND handle = NULL);
+	virtual int wndProc(UINT msg, WPARAM wParam, LPARAM lParam) = 0;
 
 	HWND _handle;
 };

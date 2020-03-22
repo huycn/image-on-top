@@ -1,15 +1,14 @@
-#include "WndManager.h"
+#include "ImageManager.h"
 #include "resource.h"
-#include "WndMessage.h"
 #include "Exception.h"
-#include "WndClass.h"
-#include "ImageWnd.h"
+#include "WindowClass.h"
+#include "ImageWidget.h"
 #include "Dialog.h"
 #include "TemplateUtilities.h"
 
 namespace Swingl {
 
-WndManager::WndManager(const std::shared_ptr<WndClass> &wndClass)
+ImageManager::ImageManager(const std::shared_ptr<WindowClass> &wndClass)
 :  _wndClass(wndClass), _trayMenu(), _transMode(TransMode::NoTrans), _transInProgress(false)
 {
 	_handle = CreateWindowEx(0, _wndClass->name(), TEXT("WndManager"), 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, _wndClass->hInstance(), NULL);
@@ -28,7 +27,7 @@ WndManager::WndManager(const std::shared_ptr<WndClass> &wndClass)
 	_transNextImg = -1;
 }
 
-WndManager::~WndManager() {
+ImageManager::~ImageManager() {
 	if (_handle != NULL) {
 		DestroyWindow(_handle);
 		SetWindowLongPtr(_handle, GWLP_USERDATA, 0);
@@ -36,7 +35,7 @@ WndManager::~WndManager() {
 }
 
 std::shared_ptr<ImageDescriptor>
-WndManager::getEntry(int index) const {
+ImageManager::getEntry(int index) const {
 	if (index >= 0 && index < static_cast<int>(_imgList.size())) {
 		return _imgList[index];
 	}
@@ -44,7 +43,7 @@ WndManager::getEntry(int index) const {
 }
 
 std::shared_ptr<ImageDescriptor>
-WndManager::popEntry(int index) {
+ImageManager::popEntry(int index) {
 	std::shared_ptr<ImageDescriptor> result = getEntry(index);
 	if (result != NULL) {
 		_imgList.erase(_imgList.begin() + index);
@@ -53,15 +52,15 @@ WndManager::popEntry(int index) {
 }
 
 void
-WndManager::setTransMode(TransMode mode, double delay, double duration) {
+ImageManager::setTransMode(TransMode mode, double delay, double duration) {
 	_transMode = mode;
 	_transDelay = delay;
 	_transDuration = duration;
 	if (mode != TransMode::NoTrans) {
 		if (not _imgList.empty()) {
-			std::shared_ptr<ImageWnd> img = std::dynamic_pointer_cast<ImageWnd>(_imgList.front());
+			std::shared_ptr<ImageWidget> img = std::dynamic_pointer_cast<ImageWidget>(_imgList.front());
 			if (img == NULL) {
-				std::shared_ptr<ImageWnd> imgWnd = std::make_shared<ImageWnd>(*_wndClass);
+				std::shared_ptr<ImageWidget> imgWnd = std::make_shared<ImageWidget>(*_wndClass);
 				if (imgWnd->loadByDescriptor(*_imgList.front())) {
 					_imgList.front() = imgWnd;
 				}
@@ -87,12 +86,12 @@ WndManager::setTransMode(TransMode mode, double delay, double duration) {
 
 
 void
-WndManager::getEntriesList(ImageList &list) const {
+ImageManager::getEntriesList(ImageList &list) const {
 	list.assign(_imgList.begin(), _imgList.end());
 }
 
 void
-WndManager::transStart() {
+ImageManager::transStart() {
 	//if (!_transInProgress && _imgList.size() > 1) {
 	//	if (_transActualImg < 0 || _transActualImg >= static_cast<int>(_imgList.size())) {
 	//		_transActualImg = 0;
@@ -107,15 +106,15 @@ WndManager::transStart() {
 }
 
 void
-WndManager::transNextFrame() {
+ImageManager::transNextFrame() {
 	if (_imgList.size() > 1) {
 		for (ImageList::iterator it = _imgList.begin(); it != _imgList.end(); ++it) {
-			std::shared_ptr<ImageWnd> img = std::dynamic_pointer_cast<ImageWnd>(*it);
+			std::shared_ptr<ImageWidget> img = std::dynamic_pointer_cast<ImageWidget>(*it);
 			if (img != NULL) {
 				*it = std::shared_ptr<ImageDescriptor>(new ImageDescriptor(*img));
 				++it;
 				if (it == _imgList.end()) it = _imgList.begin();
-				std::shared_ptr<ImageWnd> imgWnd(new ImageWnd(*_wndClass));
+				std::shared_ptr<ImageWidget> imgWnd(new ImageWidget(*_wndClass));
 				if (imgWnd->loadByDescriptor(**it)) {
 					*it = imgWnd;
 				}
@@ -126,10 +125,10 @@ WndManager::transNextFrame() {
 }
 
 int
-WndManager::insertEntry(const ImageDescriptor &entry, int index) {
+ImageManager::insertEntry(const ImageDescriptor &entry, int index) {
 	std::shared_ptr<ImageDescriptor> img;
 	if (_transMode == TransMode::NoTrans) {
-		std::shared_ptr<ImageWnd> imgWnd = std::make_shared<ImageWnd>(*_wndClass);
+		std::shared_ptr<ImageWidget> imgWnd = std::make_shared<ImageWidget>(*_wndClass);
 		if (imgWnd->loadByDescriptor(entry)) {
 			img = imgWnd;
 		}
@@ -151,7 +150,7 @@ WndManager::insertEntry(const ImageDescriptor &entry, int index) {
 }
 
 void
-WndManager::loadPrefFromRegistry() {
+ImageManager::loadPrefFromRegistry() {
 	HKEY keySoftware;
 	LONG result = RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software"), 0, KEY_QUERY_VALUE, &keySoftware);
 	if (result != ERROR_SUCCESS) return;
@@ -189,7 +188,7 @@ WndManager::loadPrefFromRegistry() {
 }
 
 void
-WndManager::savePrefToRegistry() const {
+ImageManager::savePrefToRegistry() const {
 	HKEY keySoftware;
 	LONG result = RegCreateKeyEx(HKEY_CURRENT_USER, TEXT("Software"), 0, NULL,
 						REG_OPTION_NON_VOLATILE, KEY_SET_VALUE, NULL,	&keySoftware, NULL);
@@ -223,14 +222,14 @@ WndManager::savePrefToRegistry() const {
 
 
 void
-WndManager::openDialog() {
-	std::shared_ptr<Dialog> dial = Dialog::instance(std::shared_ptr<WndManager>(const_cast<WndManager*>(this), DummyDeleter<WndManager>()));
+ImageManager::openDialog() {
+	std::shared_ptr<Dialog> dial = Dialog::instance(std::shared_ptr<ImageManager>(const_cast<ImageManager*>(this), DummyDeleter<ImageManager>()));
 	dial->show();
 }
 
 int
-WndManager::wndProc(const WndMessage &m) {
-	switch (m.msg) {
+ImageManager::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
+	switch (msg) {
 		case WM_DESTROY:
 		{
 			PostQuitMessage(0);
@@ -238,17 +237,17 @@ WndManager::wndProc(const WndMessage &m) {
 		}
 		case WM_TIMER:
 		{
-			if ((unsigned)m.wParam == 1) {
+			if ((unsigned)wParam == 1) {
 				transStart();
 			}
-			else if ((unsigned)m.wParam == 2) {
+			else if ((unsigned)wParam == 2) {
 				transNextFrame();
 			}
 			break;
 		}
 		case kIconSysTrayCommand:
 		{
-			switch (m.lParam) {
+			switch (lParam) {
 				case WM_LBUTTONDBLCLK:
 					openDialog();
 					break;
@@ -266,8 +265,8 @@ WndManager::wndProc(const WndMessage &m) {
 		}
 		case WM_COMMAND:
 		{
-			if (HIWORD(m.wParam) == 0) { // From menu
-				switch (LOWORD(m.wParam)) {
+			if (HIWORD(wParam) == 0) { // From menu
+				switch (LOWORD(wParam)) {
 					case ID_TRAYICONMENU_IMAGES:
 					{
 						openDialog();
@@ -277,7 +276,7 @@ WndManager::wndProc(const WndMessage &m) {
 						if (_trayMenu->isChecked(ID_TRAYICONMENU_ALWAYSONTOP)) {
 							if (_transMode == TransMode::NoTrans) {
 								for (ImageList::iterator it = _imgList.begin(); it != _imgList.end(); ++it) {
-									SetWindowPos(dynamic_cast<ImageWnd *>(it->get())->getHandle(), HWND_BOTTOM, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
+									SetWindowPos(dynamic_cast<ImageWidget *>(it->get())->getHandle(), HWND_BOTTOM, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
 								}
 							}
 							_trayMenu->checkItem(ID_TRAYICONMENU_ALWAYSONTOP, false);
@@ -285,7 +284,7 @@ WndManager::wndProc(const WndMessage &m) {
 						else {
 							if (_transMode == TransMode::NoTrans) {
 								for (ImageList::iterator it = _imgList.begin(); it != _imgList.end(); ++it) {
-									SetWindowPos(dynamic_cast<ImageWnd *>(it->get())->getHandle(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
+									SetWindowPos(dynamic_cast<ImageWidget *>(it->get())->getHandle(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
 								}
 							}
 							_trayMenu->checkItem(ID_TRAYICONMENU_ALWAYSONTOP, true);
@@ -295,7 +294,7 @@ WndManager::wndProc(const WndMessage &m) {
 						if (_trayMenu->isChecked(ID_TRAYICONMENU_HIDESHOW)) {
 							if (_transMode == TransMode::NoTrans) {
 								for (ImageList::iterator it = _imgList.begin(); it != _imgList.end(); ++it) {
-									dynamic_cast<ImageWnd *>(it->get())->show(true);
+									dynamic_cast<ImageWidget *>(it->get())->show(true);
 								}
 							}
 							_trayMenu->checkItem(ID_TRAYICONMENU_HIDESHOW, false);
@@ -303,7 +302,7 @@ WndManager::wndProc(const WndMessage &m) {
 						else {
 							if (_transMode == TransMode::NoTrans) {
 								for (ImageList::iterator it = _imgList.begin(); it != _imgList.end(); ++it) {
-									dynamic_cast<ImageWnd *>(it->get())->show(false);
+									dynamic_cast<ImageWidget *>(it->get())->show(false);
 								}
 							}
 							_trayMenu->checkItem(ID_TRAYICONMENU_HIDESHOW, true);
@@ -319,7 +318,7 @@ WndManager::wndProc(const WndMessage &m) {
 			break;
 		}
 		default:
-			return (int)DefWindowProc(_handle, m.msg, m.wParam, m.lParam);
+			return (int)DefWindowProc(_handle, msg, wParam, lParam);
 	}
 	return 0;
 }

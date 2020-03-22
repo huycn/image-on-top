@@ -2,9 +2,9 @@
 
 namespace Swingl {
 
-TrayMenu::TrayMenu(HINSTANCE hInstance)
+TrayMenu::TrayMenu(HINSTANCE hInstance) :
+	Menu(LoadMenu(hInstance, MAKEINTRESOURCE(IDR_MENU1)))
 {
-	_handle = LoadMenu(hInstance, MAKEINTRESOURCE(IDR_MENU1));
 	_trayMenu = GetSubMenu(_handle, 0);
 	_itemsState = 0;
 }

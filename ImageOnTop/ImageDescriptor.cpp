@@ -9,7 +9,41 @@ ImageDescriptor::ImageDescriptor(const std::wstring &desc)
 {
 	fromString(desc);
 }
-      
+
+void
+ImageDescriptor::setName(const std::wstring& name) {
+	_name = name;
+}
+
+void
+ImageDescriptor::setFileName(const std::wstring& fname) {
+	_fileName = fname;
+}
+
+void
+ImageDescriptor::enableTransparency(bool enable) {
+	_transpEnabled = enable;
+}
+
+void
+ImageDescriptor::setTransparency(bool enable, unsigned char value) {
+	_transpEnabled = enable;
+	if (enable) {
+		_transpValue = value;
+	}
+}
+
+void
+ImageDescriptor::enableClickThrough(bool enable) {
+	_isClickThrough = enable;
+}
+
+void
+ImageDescriptor::setPosition(int left, int top) {
+	_posLeft = left;
+	_posTop = top;
+}
+
 std::wstring
 ImageDescriptor::toString() const {
 	std::wostringstream output;

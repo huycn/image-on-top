@@ -6,30 +6,31 @@
 
 namespace Swingl {
 
-class WndClass;
+class WindowClass;
 class Bitmap;
 
-class ImageWnd : public Window, public ImageDescriptor
+class ImageWidget : public Window, public ImageDescriptor
 {
 public:
-	ImageWnd(WndClass &wndClass);
-	virtual ~ImageWnd();
+	ImageWidget(WindowClass &wndClass);
+	virtual ~ImageWidget();
+	
 	bool loadImage(const std::wstring &fileName, bool update = true);
 	bool loadByDescriptor(const ImageDescriptor &desctr);
 
 	unsigned int width() const;
 	unsigned int height() const;
 
-	virtual void enableTransparency(bool enable);
-	virtual void setTransparency(bool enable, unsigned char value);
-	virtual void enableClickThrough(bool enable);
-	virtual void setPosition(int left, int top);
-	virtual void fromString(const std::wstring &desc);
+	virtual void enableTransparency(bool enable) override;
+	virtual void setTransparency(bool enable, unsigned char value) override;
+	virtual void enableClickThrough(bool enable) override;
+	virtual void setPosition(int left, int top) override;
+	virtual void fromString(const std::wstring &desc) override;
 
-	void show(bool value = true) {ShowWindow(_handle, value ? SW_SHOWNOACTIVATE : SW_HIDE);}
+	virtual void show(bool value = true) override;
 
 protected:
-	virtual int wndProc(const WndMessage &wm);
+	virtual int wndProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
 	void updateClickThroughState();
 	void updateImage();
 	std::shared_ptr<Bitmap> getBitmap() const { return _bitmap; }
@@ -37,16 +38,13 @@ protected:
 protected:
 	void move(int x, int y);
 
-	typedef std::set<ImageWnd *> ObjList;
+	typedef std::set<ImageWidget *> ObjList;
 	static ObjList _imgObj;
 	std::shared_ptr<Bitmap> _bitmap;
 
 	// temporary data
 	bool _mouseLeftHold;
 	POINT _mousePos;
-
-private:
-	ImageWnd(const ImageWnd &);
 };
 
 }
