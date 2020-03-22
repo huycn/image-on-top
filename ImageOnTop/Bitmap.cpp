@@ -54,12 +54,10 @@ Bitmap::Bitmap(const std::wstring& filePath) {
 	CHECK(decoder->GetFrame(0, &frame));
 	CHECK(frame->GetSize(&_width, &_height));
 
-	WICPixelFormatGUID format;
-	CHECK(frame->GetPixelFormat(&format));
-
 	CComPtr<IWICFormatConverter> converter;
 	CHECK(factory->CreateFormatConverter(&converter));
 	CHECK(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeCustom));
+
 	_source = converter;
 }
 
