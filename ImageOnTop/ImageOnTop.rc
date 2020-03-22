@@ -1,0 +1,168 @@
+// Microsoft Visual C++ generated resource script.
+//
+
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "winres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE 9, 1
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE
+BEGIN
+    "resource1.h\0"
+END
+
+2 TEXTINCLUDE  
+BEGIN
+    "#include ""winres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE  
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON1               ICON                    "icon1.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU1 MENU 
+BEGIN
+    POPUP "TrayIconMenu"
+    BEGIN
+        MENUITEM "Images...",                   ID_TRAYICONMENU_IMAGES
+        MENUITEM "Always On Top",               ID_TRAYICONMENU_ALWAYSONTOP
+        MENUITEM "Hide",                        ID_TRAYICONMENU_HIDESHOW
+        MENUITEM SEPARATOR
+        MENUITEM "Exit",                        ID_TRAYICONMENU_EXIT
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DIALOG1 DIALOGEX 0, 0, 307, 156
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_MINIMIZEBOX | 
+    WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_TOPMOST | WS_EX_APPWINDOW
+CAPTION "TOI - Images"
+FONT 8, "MS Shell Dlg", 400, 0, 0x0
+BEGIN
+    LISTBOX         IDC_LIST_IMAGES,195,10,105,67,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_TABSTOP,WS_EX_ACCEPTFILES
+    PUSHBUTTON      "Add...",IDC_BUTTON_ADD,195,79,50,14
+    PUSHBUTTON      "Remove",IDC_BUTTON_REMOVE,250,79,50,14
+    GROUPBOX        "Image Properties",IDC_GROUP_IMGPROPER,7,7,180,70,
+                    WS_GROUP
+    CONTROL         "Transparent",IDC_CHECK_ALPHA,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,14,19,55,10
+    CONTROL         "",IDC_SLIDER_ALPHA,"msctls_trackbar32",TBS_BOTH | 
+                    TBS_NOTICKS | TBS_TOOLTIPS | WS_TABSTOP,72,17,113,15
+    CONTROL         "Click-through",IDC_CHECK_CLKTHROUGH,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,14,37,58,10
+    LTEXT           "Position :",IDC_STATIC_POSITION,14,56,30,8
+    LTEXT           "Left",IDC_STATIC_POSLEFT,55,56,14,8,NOT WS_GROUP
+    EDITTEXT        IDC_EDIT_POSLEFT,73,54,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Top",IDC_STATIC_POSTOP,121,56,16,8,NOT WS_GROUP
+    EDITTEXT        IDC_EDIT_POSTOP,139,54,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Enable transition",IDC_CHECK_TRANSITION,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,14,83,69,10
+    GROUPBOX        "Transition",IDC_GROUP_TRANSITION,7,96,293,53,WS_GROUP
+    LTEXT           "Effect",IDC_STATIC_EFFECT,14,113,20,8,NOT WS_GROUP
+    COMBOBOX        IDC_COMBO_EFFECT,48,110,105,30,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_GROUP | WS_TABSTOP
+    LTEXT           "Delay (s)",IDC_STATIC_DELAY,14,131,30,8,NOT WS_GROUP
+    EDITTEXT        IDC_EDIT_DELAY,48,129,40,12,ES_AUTOHSCROLL
+    LTEXT           "Duration (s)",IDC_STATIC_DURATION,112,131,39,8,NOT 
+                    WS_GROUP
+    EDITTEXT        IDC_EDIT_DURATION,154,129,40,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "Apply",IDC_BUTTON_APPLY,240,128,50,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_DIALOG1, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 300
+        VERTGUIDE, 14
+        VERTGUIDE, 93
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 149
+        HORZGUIDE, 24
+        HORZGUIDE, 42
+        HORZGUIDE, 60
+        HORZGUIDE, 96
+        HORZGUIDE, 116
+        HORZGUIDE, 135
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+IDS_APP_NAME            "TOI"
+IDS_APP_CLASS           "TOI Class"
+END
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
