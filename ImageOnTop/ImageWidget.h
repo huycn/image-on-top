@@ -7,6 +7,7 @@
 namespace Swingl {
 
 class WindowClass;
+class ImageManager;
 class Bitmap;
 
 class ImageWidget : public Window, public ImageDescriptor
@@ -30,7 +31,7 @@ public:
 	virtual void show(bool value = true) override;
 
 protected:
-	virtual int wndProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
+	virtual LRESULT wndProc(UINT msg, WPARAM wParam, LPARAM lParam) override;
 	void updateClickThroughState();
 	void updateImage();
 	std::shared_ptr<Bitmap> getBitmap() const { return _bitmap; }
@@ -41,6 +42,7 @@ protected:
 	typedef std::set<ImageWidget *> ObjList;
 	static ObjList _imgObj;
 	std::shared_ptr<Bitmap> _bitmap;
+	std::weak_ptr<ImageManager> _manager;
 
 	// temporary data
 	bool _mouseLeftHold;

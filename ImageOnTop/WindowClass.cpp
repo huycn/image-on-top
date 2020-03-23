@@ -1,12 +1,14 @@
 #include "WindowClass.h"
 #include "ImageManager.h"
 #include "Window.h"
-#include "TemplateUtilities.h"
 #include "Exception.h"
 
 namespace Swingl {
 
-HINSTANCE WindowClass::_hInstance = NULL;
+std::shared_ptr<WindowClass>
+WindowClass::newInstance(HINSTANCE hInstance) {
+	return std::shared_ptr<WindowClass>(new WindowClass(hInstance));
+}
 
 WindowClass::WindowClass(HINSTANCE hInstance)
 {
@@ -33,6 +35,14 @@ WindowClass::appName() const {
 	return _appName.c_str();
 }
 
+std::shared_ptr<ImageManager>
+WindowClass::imageManager() {
+	if (_wndManager == nullptr) {
+		throw RuntimeError(TEXT("Window class not initialized"));
+	}
+	return _wndManager;
+}
+
 void
 WindowClass::init() {
 	if (!_hasInit) {
@@ -49,21 +59,13 @@ WindowClass::init() {
 			throw RuntimeError(TEXT("Window Registration Failed"));
 		}
 
-		try {
-			std::shared_ptr<WindowClass> myPtr = std::shared_ptr<WindowClass>(this, DummyDeleter<WindowClass>());
-			_wndManager.reset(new ImageManager(myPtr));
-		}
-		catch (...) {
-			throw;
-		}
-
+		_wndManager = ImageManager::newInstance(shared_from_this());
 		_hasInit = true;
 	}
 }
 
 int
-WindowClass::run()
-{
+WindowClass::run() {
 	init();
 
 	NOTIFYICONDATA niData;
@@ -78,32 +80,31 @@ WindowClass::run()
 	Shell_NotifyIcon(NIM_ADD, &niData);
 
 	_wndManager->loadPrefFromRegistry();
-    MSG Msg;
-    while(GetMessage(&Msg, NULL, 0, 0) > 0)
-    {
-        TranslateMessage(&Msg);
-        DispatchMessage(&Msg);
+
+    MSG msg;
+    while (GetMessage(&msg, NULL, 0, 0)) {
+		if (!IsDialogMessage(msg.hwnd, &msg)) {
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
     }
 	Shell_NotifyIcon(NIM_DELETE, &niData);
-	return (int)Msg.wParam;
+	return (int)msg.wParam;
 }
 
 void
-WindowClass::quit()
-{
+WindowClass::quit() {
 	_wndManager->savePrefToRegistry();
 	_wndManager.reset();
 }
 
 HICON
-WindowClass::getIcon() const
-{
+WindowClass::getIcon() const {
 	return static_cast<HICON>(LoadImage(hInstance(), MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON, 16, 16, LR_SHARED));
 }
 
 LRESULT CALLBACK
-WindowClass::sWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
+WindowClass::sWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	LONG_PTR winPtr = GetWindowLongPtr(hwnd, GWLP_USERDATA);
 	if (winPtr != 0) {
 		Window *win = reinterpret_cast<Window *>(winPtr);
@@ -117,7 +118,7 @@ WindowClass::sWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 HINSTANCE
-WindowClass::hInstance() {
+WindowClass::hInstance() const {
 	return _hInstance;
 }
 

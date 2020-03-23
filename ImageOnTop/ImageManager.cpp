@@ -4,14 +4,18 @@
 #include "WindowClass.h"
 #include "ImageWidget.h"
 #include "Dialog.h"
-#include "TemplateUtilities.h"
 
 namespace Swingl {
+
+std::shared_ptr<ImageManager>
+ImageManager::newInstance(const std::shared_ptr<WindowClass>& wndClass) {
+	return std::shared_ptr<ImageManager>(new ImageManager(wndClass));
+}
 
 ImageManager::ImageManager(const std::shared_ptr<WindowClass> &wndClass)
 :  _wndClass(wndClass), _trayMenu(), _transMode(TransMode::NoTrans), _transInProgress(false)
 {
-	_handle = CreateWindowEx(0, _wndClass->name(), TEXT("WndManager"), 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, _wndClass->hInstance(), NULL);
+	_handle = CreateWindowEx(0, wndClass->name(), TEXT("WndManager"), 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, wndClass->hInstance(), NULL);
 	if (_handle == NULL) {
 		throw RuntimeError(TEXT("Can't create window manager"));
 	}
@@ -33,6 +37,22 @@ ImageManager::~ImageManager() {
 		SetWindowLongPtr(_handle, GWLP_USERDATA, 0);
 	}
 }
+
+std::shared_ptr<WindowClass>
+ImageManager::getWndClass() const {
+	return _wndClass.lock();
+}
+
+std::shared_ptr<Dialog>
+ImageManager::getDialog() const {
+	return _dialog;
+}
+
+void
+ImageManager::setDialog(const std::shared_ptr<Dialog>& dialog) {
+	_dialog = dialog;
+}
+
 
 std::shared_ptr<ImageDescriptor>
 ImageManager::getEntry(int index) const {
@@ -60,9 +80,11 @@ ImageManager::setTransMode(TransMode mode, double delay, double duration) {
 		if (not _imgList.empty()) {
 			std::shared_ptr<ImageWidget> img = std::dynamic_pointer_cast<ImageWidget>(_imgList.front());
 			if (img == NULL) {
-				std::shared_ptr<ImageWidget> imgWnd = std::make_shared<ImageWidget>(*_wndClass);
-				if (imgWnd->loadByDescriptor(*_imgList.front())) {
-					_imgList.front() = imgWnd;
+				if (auto wndClass = _wndClass.lock()) {
+					std::shared_ptr<ImageWidget> imgWnd = std::make_shared<ImageWidget>(*wndClass);
+					if (imgWnd->loadByDescriptor(*_imgList.front())) {
+						_imgList.front() = imgWnd;
+					}
 				}
 			}
 		}
@@ -85,9 +107,9 @@ ImageManager::setTransMode(TransMode mode, double delay, double duration) {
 }
 
 
-void
-ImageManager::getEntriesList(ImageList &list) const {
-	list.assign(_imgList.begin(), _imgList.end());
+ImageManager::ImageList
+ImageManager::getEntriesList() const {
+	return _imgList;
 }
 
 void
@@ -111,12 +133,16 @@ ImageManager::transNextFrame() {
 		for (ImageList::iterator it = _imgList.begin(); it != _imgList.end(); ++it) {
 			std::shared_ptr<ImageWidget> img = std::dynamic_pointer_cast<ImageWidget>(*it);
 			if (img != NULL) {
-				*it = std::shared_ptr<ImageDescriptor>(new ImageDescriptor(*img));
+				*it = std::make_shared<ImageDescriptor>(*img);
 				++it;
-				if (it == _imgList.end()) it = _imgList.begin();
-				std::shared_ptr<ImageWidget> imgWnd(new ImageWidget(*_wndClass));
-				if (imgWnd->loadByDescriptor(**it)) {
-					*it = imgWnd;
+				if (it == _imgList.end()) {
+					it = _imgList.begin();
+				}
+				if (auto wndClass = _wndClass.lock()) {
+					auto imgWnd = std::make_shared<ImageWidget>(*wndClass);
+					if (imgWnd->loadByDescriptor(**it)) {
+						*it = imgWnd;
+					}
 				}
 				break;
 			}
@@ -128,9 +154,14 @@ int
 ImageManager::insertEntry(const ImageDescriptor &entry, int index) {
 	std::shared_ptr<ImageDescriptor> img;
 	if (_transMode == TransMode::NoTrans) {
-		std::shared_ptr<ImageWidget> imgWnd = std::make_shared<ImageWidget>(*_wndClass);
-		if (imgWnd->loadByDescriptor(entry)) {
-			img = imgWnd;
+		if (auto wndClass = _wndClass.lock()) {
+			std::shared_ptr<ImageWidget> imgWnd = std::make_shared<ImageWidget>(*wndClass);
+			if (imgWnd->loadByDescriptor(entry)) {
+				img = imgWnd;
+			}
+			else {
+				return -1;
+			}
 		}
 		else {
 			return -1;
@@ -151,11 +182,18 @@ ImageManager::insertEntry(const ImageDescriptor &entry, int index) {
 
 void
 ImageManager::loadPrefFromRegistry() {
+	auto wndClass = _wndClass.lock();
+	if (wndClass == nullptr) {
+		return;
+	}
+
 	HKEY keySoftware;
 	LONG result = RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software"), 0, KEY_QUERY_VALUE, &keySoftware);
-	if (result != ERROR_SUCCESS) return;
+	if (result != ERROR_SUCCESS) {
+		return;
+	}
 	HKEY myKey;
-	result = RegOpenKeyEx(keySoftware, _wndClass->appName(), 0, KEY_QUERY_VALUE, &myKey);
+	result = RegOpenKeyEx(keySoftware, wndClass->appName(), 0, KEY_QUERY_VALUE, &myKey);
 	if (result == ERROR_SUCCESS) {
 		DWORD size = sizeof(int);
 		unsigned transMode = 0;
@@ -170,18 +208,18 @@ ImageManager::loadPrefFromRegistry() {
 			const int bufferSize = MAX_PATH + 100;
 			wchar_t buffer[bufferSize];
 			wchar_t entryName[10];
-			for (int i=0; i<nbEntries; ++i) {
+			for (int i = 0; i < nbEntries; ++i) {
 				wsprintf(entryName, TEXT("%d"), i);
 				DWORD bytesRead = (bufferSize - 1) * sizeof(wchar_t);
 				result = RegQueryValueEx(myKey, entryName, 0, NULL, (LPBYTE)buffer, &bytesRead);
 				if (result == ERROR_SUCCESS) {
 					buffer[bytesRead] = wchar_t(0);
-					_imgList.push_back(ImageList::value_type(new ImageDescriptor(buffer)));
+					_imgList.push_back(std::make_shared<ImageDescriptor>(buffer));
 				}
 				result = ERROR_SUCCESS;
 			}
 		}
-		setTransMode(static_cast<TransMode>(transMode), double(transDelay)/1000.0, double(transDuration)/1000.0);
+		setTransMode(static_cast<TransMode>(transMode), double(transDelay) / 1000.0, double(transDuration) / 1000.0);
 		RegCloseKey(myKey);
 	}
 	RegCloseKey(keySoftware);
@@ -189,14 +227,19 @@ ImageManager::loadPrefFromRegistry() {
 
 void
 ImageManager::savePrefToRegistry() const {
+	auto wndClass = _wndClass.lock();
+	if (wndClass == nullptr) {
+		return;
+	}
+
 	HKEY keySoftware;
 	LONG result = RegCreateKeyEx(HKEY_CURRENT_USER, TEXT("Software"), 0, NULL,
 						REG_OPTION_NON_VOLATILE, KEY_SET_VALUE, NULL,	&keySoftware, NULL);
 	if (result == ERROR_SUCCESS) {
-		RegDeleteKey(keySoftware, _wndClass->appName());
+		RegDeleteKey(keySoftware, wndClass->appName());
 		if (_imgList.size() > 0) {
 			HKEY myKey;
-			result = RegCreateKeyEx(keySoftware, _wndClass->appName(), 0, NULL,
+			result = RegCreateKeyEx(keySoftware, wndClass->appName(), 0, NULL,
 						REG_OPTION_NON_VOLATILE, KEY_SET_VALUE, NULL, &myKey, NULL);
 			if (result == ERROR_SUCCESS) {
 				unsigned transValue = static_cast<unsigned>(_transMode);
@@ -223,11 +266,13 @@ ImageManager::savePrefToRegistry() const {
 
 void
 ImageManager::openDialog() {
-	std::shared_ptr<Dialog> dial = Dialog::instance(std::shared_ptr<ImageManager>(const_cast<ImageManager*>(this), DummyDeleter<ImageManager>()));
-	dial->show();
+	if (_dialog == nullptr) {
+		_dialog = std::make_shared<Dialog>(shared_from_this());
+	}
+	_dialog->show();
 }
 
-int
+LRESULT
 ImageManager::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch (msg) {
 		case WM_DESTROY:
@@ -309,7 +354,9 @@ ImageManager::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 						}
 						break;
 					case ID_TRAYICONMENU_EXIT:
-						_wndClass->quit();
+						if (auto wndClass = _wndClass.lock()) {
+							wndClass->quit();
+						}
 						break;
 					default:
 						break;
@@ -318,10 +365,9 @@ ImageManager::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			break;
 		}
 		default:
-			return (int)DefWindowProc(_handle, msg, wParam, lParam);
+			return DefWindowProc(_handle, msg, wParam, lParam);
 	}
 	return 0;
 }
-
 
 }

@@ -8,9 +8,8 @@ namespace Swingl {
 class Window;
 class ImageManager;
 
-class WindowClass {
+class WindowClass : public std::enable_shared_from_this<WindowClass> {
 public:
-	WindowClass(HINSTANCE hInstance);
 	~WindowClass();
 
 	WindowClass(const WindowClass&) = delete;
@@ -18,21 +17,25 @@ public:
 
 	const wchar_t* name() const;
 	const wchar_t* appName() const;
+	std::shared_ptr<ImageManager> imageManager();
 	HICON getIcon() const;
 	int run();
 	void quit();
 
-	static HINSTANCE hInstance();
+	HINSTANCE hInstance() const;
+
+	static std::shared_ptr<WindowClass> newInstance(HINSTANCE hInstance);
 	static LRESULT CALLBACK sWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-protected:
+private:
+	WindowClass(HINSTANCE hInstance);
 	void init();
 
-	static HINSTANCE _hInstance;
+	HINSTANCE _hInstance;
 	std::wstring _name;
 	std::wstring _appName;
 	bool _hasInit;
-	std::unique_ptr<ImageManager> _wndManager;
+	std::shared_ptr<ImageManager> _wndManager;
 };
 
 }

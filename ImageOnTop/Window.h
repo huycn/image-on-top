@@ -18,7 +18,7 @@ protected:
 	friend class WindowClass;
 
 	Window(HWND handle = NULL);
-	virtual int wndProc(UINT msg, WPARAM wParam, LPARAM lParam) = 0;
+	virtual LRESULT wndProc(UINT msg, WPARAM wParam, LPARAM lParam) = 0;
 
 	HWND _handle;
 };

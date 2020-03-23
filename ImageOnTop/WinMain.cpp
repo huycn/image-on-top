@@ -16,8 +16,8 @@
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
-	Swingl::WindowClass wndClass(hInstance);
-	if (HWND hPrevWnd = FindWindow(wndClass.name(), NULL)) { 
+	auto wndClass = Swingl::WindowClass::newInstance(hInstance);
+	if (HWND hPrevWnd = FindWindow(wndClass->name(), NULL)) { 
 		return 0;
 	}
 
@@ -25,7 +25,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 	int returnCode = 0;
 	try {
-		returnCode = wndClass.run();
+		returnCode = wndClass->run();
 	}
 	catch (const Swingl::Exception &e) {
 		MessageBox(NULL, e.what(), TEXT("ERROR!"), MB_OK|MB_ICONERROR);

@@ -2,14 +2,16 @@
 #include "WindowClass.h"
 #include "Dialog.h"
 #include "Bitmap.h"
+#include "ImageManager.h"
+#include "WindowClass.h"
 #include "Exception.h"
 
 namespace Swingl {
 
 ImageWidget::ObjList ImageWidget::_imgObj;
 
-ImageWidget::ImageWidget(WindowClass &wndClass)
-{
+ImageWidget::ImageWidget(WindowClass &wndClass) {
+	_manager = wndClass.imageManager();
 	_mouseLeftHold = false;
 	_mousePos = { 0 };
 	_isClickThrough = true;
@@ -28,11 +30,10 @@ ImageWidget::ImageWidget(WindowClass &wndClass)
 	_imgObj.insert(this);
 }
 
-ImageWidget::~ImageWidget()
-{
+ImageWidget::~ImageWidget() {
 	if (_handle != NULL) {
 		DestroyWindow(_handle);
-		SetWindowLong(_handle, GWLP_USERDATA, 0);
+		SetWindowLongPtr(_handle, GWLP_USERDATA, 0);
 	}
 	_imgObj.erase(this);
 }
@@ -155,11 +156,12 @@ ImageWidget::updateImage() {
 void
 ImageWidget::move(int x, int y) {
 	setPosition(x, y);
-	std::shared_ptr<Dialog> dialog = Dialog::instance();
-	if (dialog != NULL) {
-		std::shared_ptr<ImageDescriptor> entry = dialog->getSelectedEntry();
-		if (entry.get() == this) {
-			dialog->updateSelectedItemOrigin(x, y);
+	if (auto manager = _manager.lock()) {
+		if (auto dialog = manager->getDialog()) {
+			std::shared_ptr<ImageDescriptor> entry = dialog->getSelectedEntry();
+			if (entry.get() == this) {
+				dialog->updateSelectedItemOrigin(x, y);
+			}
 		}
 	}
 }
@@ -169,7 +171,7 @@ ImageWidget::show(bool value) {
 	ShowWindow(_handle, value ? SW_SHOWNOACTIVATE : SW_HIDE);
 }
 
-int
+LRESULT
 ImageWidget::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch (msg) {
 		case WM_PAINT:
@@ -187,8 +189,10 @@ ImageWidget::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 		case WM_LBUTTONUP:
 			_mouseLeftHold = false;
 			ReleaseCapture();
-			if (Dialog::instance() != NULL) {
-				SetForegroundWindow(Dialog::instance()->getHandle());
+			if (auto manager = _manager.lock()) {
+				if (auto dialog = manager->getDialog()) {
+					SetForegroundWindow(dialog->getHandle());
+				}
 			}
 			break;
 		case WM_MOUSEMOVE:
@@ -202,9 +206,9 @@ ImageWidget::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 			break;
 		default:
-			return (int)DefWindowProc(_handle, msg, wParam, lParam);
+			return DefWindowProc(_handle, msg, wParam, lParam);
 	}
-	return 0;
+	return NULL;
 }
 
 }

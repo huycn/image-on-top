@@ -7,7 +7,9 @@ namespace Swingl {
 ImageDescriptor::ImageDescriptor(const std::wstring &desc)
 : _isClickThrough(false), _transpEnabled(false), _transpValue(0), _posLeft(0), _posTop(0)
 {
-	fromString(desc);
+	if (!desc.empty()) {
+		fromString(desc);
+	}
 }
 
 void
@@ -59,7 +61,9 @@ ImageDescriptor::toString() const {
 
 void
 ImageDescriptor::fromString(const std::wstring &desc) {
-	int isClickThrough, transpEnabled, transpValue;
+	int isClickThrough = 0;
+	int transpEnabled = 0;
+	int transpValue = 0;
 	std::wistringstream input(desc);
 	input >> isClickThrough >> transpEnabled >> transpValue >> _posLeft >> _posTop;
 	std::getline(input, _name); // to remove endl
@@ -69,6 +73,5 @@ ImageDescriptor::fromString(const std::wstring &desc) {
 	_transpEnabled = transpEnabled != 0;
 	_transpValue = static_cast<unsigned char>(transpValue);
 }
-
 
 }
