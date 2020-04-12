@@ -6,6 +6,7 @@
 
 #include <iomanip>
 #include <sstream>
+#include <cassert>
 
 #ifndef TBM_SETRANGE
 #define TBM_SETRANGE (WM_USER + 6)
@@ -16,27 +17,42 @@
 #endif
 
 namespace {
-	int transGroupIDs[] = {	IDC_GROUP_TRANSITION,
-							IDC_STATIC_EFFECT,
-							IDC_COMBO_EFFECT,
-							IDC_STATIC_DELAY,
-							IDC_EDIT_DELAY,
-							IDC_STATIC_DURATION,
-							IDC_EDIT_DURATION,
-							0
-							};
-	int imgPropGrpIDs[] = {
-							IDC_GROUP_IMGPROPER,
-							IDC_CHECK_ALPHA,
-							IDC_SLIDER_ALPHA,
-							IDC_CHECK_CLKTHROUGH,
-							IDC_STATIC_POSITION,
-							IDC_STATIC_POSLEFT,
-							IDC_EDIT_POSLEFT,
-							IDC_STATIC_POSTOP,
-							IDC_EDIT_POSTOP,
-							0
-							};
+
+	const int TRANS_GROUP_IDS[] = {
+		IDC_GROUP_TRANSITION,
+		IDC_STATIC_EFFECT,
+		IDC_COMBO_EFFECT,
+		IDC_STATIC_DELAY,
+		IDC_EDIT_DELAY,
+		IDC_STATIC_DURATION,
+		IDC_EDIT_DURATION,
+	};
+
+	const int IMG_PROP_GROUP_IDS[] = {
+		IDC_GROUP_IMGPROPER,
+		IDC_CHECK_ALPHA,
+		IDC_SLIDER_ALPHA,
+		IDC_CHECK_CLKTHROUGH,
+		IDC_STATIC_POSITION,
+		IDC_STATIC_POSLEFT,
+		IDC_EDIT_POSLEFT,
+		IDC_STATIC_POSTOP,
+		IDC_EDIT_POSTOP,
+	};
+
+	template <int len>
+	void enableItems(HWND hdlg, const int (&ids)[len], bool enable) {
+		for (int i = 0; i < len; ++i) {
+			HWND hItem = GetDlgItem(hdlg, ids[i]);
+			EnableWindow(hItem, enable);
+		}
+	}
+
+	std::wstring toString(double d) {
+		std::wostringstream buffer;
+		buffer << d;
+		return buffer.str();
+	}
 }
 
 namespace Swingl {
@@ -67,20 +83,15 @@ Dialog::Dialog(const std::shared_ptr<ImageManager> &wndMgr) : _wndMgr(wndMgr) {
 	
 	bool transEnabled = wndMgr->transMode() != TransMode::NoTrans;
 	SendMessage(GetDlgItem(_handle, IDC_CHECK_TRANSITION), BM_SETCHECK, transEnabled ? BST_CHECKED : BST_UNCHECKED, 0);
-	enableItems(transEnabled, transGroupIDs);
+	enableItems(_handle, TRANS_GROUP_IDS, transEnabled);
 
 	HWND cbTransEffect = GetDlgItem(_handle, IDC_COMBO_EFFECT);
 	SendMessage(cbTransEffect, CB_ADDSTRING, 0, (LPARAM)TEXT("No effect"));
 	SendMessage(cbTransEffect, CB_ADDSTRING, 0, (LPARAM)TEXT("Alpha blending"));
 	SendMessage(cbTransEffect, CB_SETCURSEL, max(0, int(wndMgr->transMode()) - 1), (LPARAM)TEXT("Alpha blending"));
  
-	std::wostringstream buffer;
-	buffer << wndMgr->transDelay();
-	setItemText(IDC_EDIT_DELAY, buffer.str());
-
-	buffer.str(TEXT(""));
-	buffer << wndMgr->transDuration();
-	setItemText(IDC_EDIT_DURATION, buffer.str());
+	setItemText(IDC_EDIT_DELAY, toString(wndMgr->transDelay()));
+	setItemText(IDC_EDIT_DURATION, toString(wndMgr->transDuration()));
 
 	updateImageList();
 }
@@ -90,11 +101,128 @@ Dialog::~Dialog() {
 	SetWindowLongPtr(_handle, GWLP_USERDATA, 0);
 }
 
+void
+Dialog::setItemText(int itemId, const std::wstring &text) {
+	HWND edit = GetDlgItem(_handle, itemId);
+	SetWindowText(edit, text.c_str());
+}
+
+std::wstring
+Dialog::getItemText(int itemId) {
+	HWND edit = GetDlgItem(_handle, itemId);
+	TCHAR buffer[256];
+	GetWindowText(edit, buffer, 256);
+	return buffer;
+}
+
+void
+Dialog::updateImageList() {
+	if (auto wndMgr = _wndMgr.lock()) {
+		HWND hListItem = GetDlgItem(_handle, IDC_LIST_IMAGES);
+		auto imgList = wndMgr->getEntriesList();
+		for (const auto& img : imgList) {
+			SendMessage(hListItem, LB_ADDSTRING, 0, (LPARAM)img->name().c_str());
+		}
+		if (lastSelectedEntry >= 0 && lastSelectedEntry < static_cast<int>(imgList.size())) {
+			SendMessage(hListItem, LB_SETCURSEL, (WPARAM)lastSelectedEntry, 0);
+		}
+		updateItemsState();
+	}
+}
+
+std::shared_ptr<ImageDescriptor>
+Dialog::getSelectedEntry() {
+	std::shared_ptr<ImageDescriptor> result;
+	if (auto wndMgr = _wndMgr.lock()) {
+		LRESULT index = SendDlgItemMessage(_handle, IDC_LIST_IMAGES, LB_GETCURSEL, 0, 0);
+		if (index != LB_ERR) {
+			result = wndMgr->getEntry(lastSelectedEntry = (int)index);
+		}
+	}
+	return result;
+}
+
+void
+Dialog::updateItemsState() {
+	std::shared_ptr<ImageDescriptor> entry = getSelectedEntry();
+	HWND btnRemove = GetDlgItem(_handle, IDC_BUTTON_REMOVE);
+	if (entry != NULL) {
+		HWND hSlider = GetDlgItem(_handle, IDC_SLIDER_ALPHA);
+		bool hasAlpha = entry->transparencyEnabled();
+		SendDlgItemMessage(_handle, IDC_CHECK_ALPHA, BM_SETCHECK, (WPARAM)(hasAlpha ? BST_CHECKED : BST_UNCHECKED), 0);
+		EnableWindow(hSlider, hasAlpha ? TRUE : FALSE);
+		SendMessage(hSlider, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)entry->transparencyValue());
+		SendDlgItemMessage(_handle, IDC_CHECK_CLKTHROUGH, BM_SETCHECK, (WPARAM)(entry->isClickThrough() ? BST_CHECKED : BST_UNCHECKED), 0);
+		updateSelectedItemOrigin(entry->left(), entry->top());
+		EnableWindow(btnRemove, TRUE);
+		enableItems(_handle, IMG_PROP_GROUP_IDS, true);
+	}
+	else {
+		EnableWindow(btnRemove, FALSE);
+		enableItems(_handle, IMG_PROP_GROUP_IDS, false);
+	}
+}
+
+void
+Dialog::updateSelectedItemOrigin(int x, int y) {
+	wchar_t buffer[50];
+	wsprintf(buffer, TEXT("%d"), x);
+	setItemText(IDC_EDIT_POSLEFT, buffer);
+	wsprintf(buffer, TEXT("%d"), y);
+	setItemText(IDC_EDIT_POSTOP, buffer);
+}
+
+void
+Dialog::show(bool) {
+	ShowWindow(_handle, SW_SHOW);
+	SetForegroundWindow(_handle);
+
+	if (auto wndMgr = _wndMgr.lock()) {
+		for (const auto& img : wndMgr->getEntriesList()) {
+			img->enableClickThrough(false);
+		}
+	}
+
+	updateItemsState();
+}
+
+void
+Dialog::addEntry(const std::wstring &fileName) {
+	if (auto wndMgr = _wndMgr.lock()) {
+		ImageDescriptor entry;
+		auto ind = fileName.find_last_of('\\');
+		std::wstring entryName;
+		if (ind != std::wstring::npos) {
+			entryName = fileName.substr(ind + 1);
+		}
+		else {
+			entryName = fileName;
+		}
+		entry.setName(entryName);
+		entry.setFileName(fileName);
+		entry.setTransparency(true, 128);
+		//entry.enableClickThrough(true);
+		HWND hListItem = GetDlgItem(_handle, IDC_LIST_IMAGES);
+		LRESULT index = SendMessage(hListItem, LB_ADDSTRING, 0, (LPARAM)entry.name().c_str());
+		if (index != LB_ERR) {
+			if (wndMgr->insertEntry(entry, (int)index) >= 0) {
+				SendMessage(hListItem, LB_SETCURSEL, (WPARAM)index, 0);
+				updateItemsState();
+			}
+			else {
+				SendMessage(hListItem, LB_DELETESTRING, (WPARAM)index, 0);
+				MessageBox(_handle, TEXT("The image format is probably unknown"), TEXT("Can't load image"), MB_ICONEXCLAMATION | MB_OK);
+			}
+		}
+	}
+}
+
+
 LRESULT
 Dialog::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch (msg) {
 	case WM_INITDIALOG:
-		return TRUE;
+		break;
 	case WM_CLOSE:
 		if (auto wndMgr = _wndMgr.lock()) {
 			for (const auto& img : wndMgr->getEntriesList()) {
@@ -102,7 +230,7 @@ Dialog::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 			wndMgr->setDialog(nullptr);
 		}
-		return TRUE;
+		break;
 	case WM_DROPFILES: {
 		HDROP hDropFiles = (HDROP)wParam;
 		unsigned nFiles = DragQueryFile(hDropFiles, 0xFFFFFFFF, NULL, 0);
@@ -112,13 +240,13 @@ Dialog::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 			DragQueryFile(hDropFiles, i, &buffer[0], bufferSize);
 			addEntry(buffer);
 		}
-		return TRUE;
+		break;
 	}
 	case WM_CHAR:
 		if (wParam == VK_RETURN) {
 			SetFocus(_handle);
 		}
-		return TRUE;
+		break;
 	case WM_COMMAND:
 		switch (LOWORD(wParam))
 		{
@@ -217,7 +345,7 @@ Dialog::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 		case IDC_CHECK_TRANSITION:
 			if (HIWORD(wParam) == BN_CLICKED && lParam != NULL) {
 				bool enable = SendMessage((HWND)lParam, BM_GETCHECK, 0, 0) == BST_CHECKED;
-				enableItems(enable, transGroupIDs);
+				enableItems(_handle, TRANS_GROUP_IDS, enable);
 				//_instance->_wndMgr->setTransMode(enable?eTransDirect: eNoTrans, 5.0, 0.0);
 			}
 			break;
@@ -229,24 +357,19 @@ Dialog::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 					LRESULT curSel = SendMessage(GetDlgItem(_handle, IDC_COMBO_EFFECT), CB_GETCURSEL, 0, 0);
 					transMode = static_cast<TransMode>((int)curSel + 1);
 				}
-				std::wistringstream strbuf(getItemText(IDC_EDIT_DELAY));
-				double delay;
-				strbuf >> delay;
-				strbuf.str(getItemText(IDC_EDIT_DURATION));
-				double duration;
-				strbuf >> duration;
-
+				double delay = std::wcstod(getItemText(IDC_EDIT_DELAY).c_str(), nullptr);
+				double duration = std::wcstod(getItemText(IDC_EDIT_DURATION).c_str(), nullptr);
 				if (auto wndMgr = _wndMgr.lock()) {
 					wndMgr->setTransMode(transMode, delay, duration);
 				}
 			}
 			break;
 		default:
-			break;
+			return FALSE;
 		}
-		return TRUE;
+		break;
 	case WM_HSCROLL:
-		if (LOWORD(wParam) == SB_THUMBTRACK && lParam != NULL) {
+		if ((LOWORD(wParam) == SB_THUMBTRACK || LOWORD(wParam) == SB_THUMBPOSITION) && lParam != NULL) {
 			if (auto wndMgr = _wndMgr.lock()) {
 				int pos = HIWORD(wParam);
 				LRESULT index = SendDlgItemMessage(_handle, IDC_LIST_IMAGES, LB_GETCURSEL, 0, 0);
@@ -256,138 +379,22 @@ Dialog::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 				}
 			}
 		}
-		return TRUE;
+		break;
+	default:
+		return FALSE;
 	}
-	return FALSE;
-}
-
-void
-Dialog::setItemText(int itemId, const std::wstring &text) {
-	HWND edit = GetDlgItem(_handle, itemId);
-	SetWindowText(edit, text.c_str());
-}
-
-std::wstring
-Dialog::getItemText(int itemId) {
-	HWND edit = GetDlgItem(_handle, itemId);
-	TCHAR buffer[256];
-	GetWindowText(edit, buffer, 256);
-	return buffer;
-}
-
-void
-Dialog::enableItems(bool enable, const int ids[]) {
-	for (int i=0; ids[i] > 0; ++i) {
-		HWND hItem = GetDlgItem(_handle, ids[i]);
-		EnableWindow(hItem, enable);
-	}
-}
-
-void
-Dialog::updateImageList() {
-	if (auto wndMgr = _wndMgr.lock()) {
-		HWND hListItem = GetDlgItem(_handle, IDC_LIST_IMAGES);
-		auto imgList = wndMgr->getEntriesList();
-		for (const auto& img : imgList) {
-			SendMessage(hListItem, LB_ADDSTRING, 0, (LPARAM)img->name().c_str());
-		}
-		if (lastSelectedEntry >= 0 && lastSelectedEntry < static_cast<int>(imgList.size())) {
-			SendMessage(hListItem, LB_SETCURSEL, (WPARAM)lastSelectedEntry, 0);
-		}
-		updateItemsState();
-	}
-}
-
-std::shared_ptr<ImageDescriptor>
-Dialog::getSelectedEntry() {
-	std::shared_ptr<ImageDescriptor> result;
-	if (auto wndMgr = _wndMgr.lock()) {
-		LRESULT index = SendDlgItemMessage(_handle, IDC_LIST_IMAGES, LB_GETCURSEL, 0, 0);
-		if (index != LB_ERR) {
-			result = wndMgr->getEntry(lastSelectedEntry = (int)index);
-		}
-	}
-	return result;
-}
-
-void
-Dialog::updateItemsState() {
-	std::shared_ptr<ImageDescriptor> entry = getSelectedEntry();
-	HWND btnRemove = GetDlgItem(_handle, IDC_BUTTON_REMOVE);
-	if (entry != NULL) {
-		HWND hSlider = GetDlgItem(_handle, IDC_SLIDER_ALPHA);
-		bool hasAlpha = entry->transparencyEnabled();
-		SendDlgItemMessage(_handle, IDC_CHECK_ALPHA, BM_SETCHECK, (WPARAM)(hasAlpha ? BST_CHECKED : BST_UNCHECKED), 0);
-		EnableWindow(hSlider, hasAlpha ? TRUE : FALSE);
-		SendMessage(hSlider, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)entry->transparencyValue());
-		SendDlgItemMessage(_handle, IDC_CHECK_CLKTHROUGH, BM_SETCHECK, (WPARAM)(entry->isClickThrough() ? BST_CHECKED : BST_UNCHECKED), 0);
-		updateSelectedItemOrigin(entry->left(), entry->top());
-		EnableWindow(btnRemove, TRUE);
-		enableItems(true, imgPropGrpIDs);
-	}
-	else {
-		EnableWindow(btnRemove, FALSE);
-		enableItems(false, imgPropGrpIDs);
-	}
-}
-
-void
-Dialog::updateSelectedItemOrigin(int x, int y) {
-	wchar_t buffer[50];
-	wsprintf(buffer, TEXT("%d"), x);
-	setItemText(IDC_EDIT_POSLEFT, buffer);
-	wsprintf(buffer, TEXT("%d"), y);
-	setItemText(IDC_EDIT_POSTOP, buffer);
-}
-
-void
-Dialog::show(bool) {
-	ShowWindow(_handle, SW_SHOW);
-	SetForegroundWindow(_handle);
-
-	if (auto wndMgr = _wndMgr.lock()) {
-		for (const auto& img : wndMgr->getEntriesList()) {
-			img->enableClickThrough(false);
-		}
-	}
-
-	updateItemsState();
-}
-
-void
-Dialog::addEntry(const std::wstring &fileName) {
-	if (auto wndMgr = _wndMgr.lock()) {
-		ImageDescriptor entry;
-		auto ind = fileName.find_last_of('\\');
-		std::wstring entryName;
-		if (ind != std::wstring::npos) {
-			entryName = fileName.substr(ind + 1);
-		}
-		else {
-			entryName = fileName;
-		}
-		entry.setName(entryName);
-		entry.setFileName(fileName);
-		entry.setTransparency(true, 128);
-		//entry.enableClickThrough(true);
-		HWND hListItem = GetDlgItem(_handle, IDC_LIST_IMAGES);
-		LRESULT index = SendMessage(hListItem, LB_ADDSTRING, 0, (LPARAM)entry.name().c_str());
-		if (index != LB_ERR) {
-			if (wndMgr->insertEntry(entry, (int)index) >= 0) {
-				SendMessage(hListItem, LB_SETCURSEL, (WPARAM)index, 0);
-				updateItemsState();
-			}
-			else {
-				SendMessage(hListItem, LB_DELETESTRING, (WPARAM)index, 0);
-				MessageBox(_handle, TEXT("The image format is probably unknown"), TEXT("Can't load image"), MB_ICONEXCLAMATION | MB_OK);
-			}
-		}
-	}
+	return TRUE;
 }
 
 INT_PTR CALLBACK
 Dialog::dialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-	return (INT_PTR)WindowClass::sWndProc(hwndDlg, uMsg, wParam, lParam);
+	LONG_PTR winPtr = GetWindowLongPtr(hwndDlg, GWLP_USERDATA);
+	if (winPtr != 0) {
+		Dialog* dialog = reinterpret_cast<Dialog*>(winPtr);
+		assert(dialog->_handle == hwndDlg);
+		return dialog->wndProc(uMsg, wParam, lParam);
+	}
+	return FALSE;
 }
 
 }

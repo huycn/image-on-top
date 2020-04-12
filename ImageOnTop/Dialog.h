@@ -28,7 +28,6 @@ private:
 
 	void updateItemsState();
 	void updateImageList();
-	void enableItems(bool enable, const int ids[]);
 	void addEntry(const std::wstring &fileName);
 	
 	std::weak_ptr<ImageManager> _wndMgr;
