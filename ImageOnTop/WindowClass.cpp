@@ -83,7 +83,7 @@ WindowClass::run() {
 
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
-		if (!IsDialogMessage(msg.hwnd, &msg)) {
+		if (!_wndManager->isDialogMessage(msg)) {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}

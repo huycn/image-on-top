@@ -38,6 +38,11 @@ ImageManager::~ImageManager() {
 	}
 }
 
+bool
+ImageManager::isDialogMessage(MSG& msg) const {
+	return _dialog != nullptr && IsDialogMessage(_dialog->getHandle(), &msg);
+}
+
 std::shared_ptr<WindowClass>
 ImageManager::getWndClass() const {
 	return _wndClass.lock();

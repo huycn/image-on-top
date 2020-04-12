@@ -20,6 +20,8 @@ public:
 	void setItemText(int itemId, const std::wstring &text);
 	std::wstring getItemText(int itemId);
 
+	HWND getHandle() const { return _handle; }
+
 private:
 	static INT_PTR CALLBACK dialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	static int lastSelectedEntry;

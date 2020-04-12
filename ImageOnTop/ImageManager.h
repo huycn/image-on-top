@@ -39,6 +39,7 @@ public:
 
 	std::shared_ptr<Dialog> getDialog() const;
 	void setDialog(const std::shared_ptr<Dialog>& dialog);
+	bool isDialogMessage(MSG& msg) const;
 
 	static const int kIconSysTrayCommand = WM_USER + 50;
 
