@@ -38,6 +38,8 @@ namespace {
 		IDC_EDIT_POSLEFT,
 		IDC_STATIC_POSTOP,
 		IDC_EDIT_POSTOP,
+		IDC_STATIC_SCALE,
+		IDC_EDIT_SCALE,
 	};
 
 	template <int len>
@@ -154,6 +156,7 @@ Dialog::updateItemsState() {
 		SendMessage(hSlider, TBM_SETPOS, (WPARAM)TRUE, (LPARAM)entry->transparencyValue());
 		SendDlgItemMessage(_handle, IDC_CHECK_CLKTHROUGH, BM_SETCHECK, (WPARAM)(entry->isClickThrough() ? BST_CHECKED : BST_UNCHECKED), 0);
 		updateSelectedItemOrigin(entry->left(), entry->top());
+		setItemText(IDC_EDIT_SCALE, std::to_wstring((int)std::round(entry->scale() * 100)));
 		EnableWindow(btnRemove, TRUE);
 		enableItems(_handle, IMG_PROP_GROUP_IDS, true);
 	}
@@ -165,11 +168,8 @@ Dialog::updateItemsState() {
 
 void
 Dialog::updateSelectedItemOrigin(int x, int y) {
-	wchar_t buffer[50];
-	wsprintf(buffer, TEXT("%d"), x);
-	setItemText(IDC_EDIT_POSLEFT, buffer);
-	wsprintf(buffer, TEXT("%d"), y);
-	setItemText(IDC_EDIT_POSTOP, buffer);
+	setItemText(IDC_EDIT_POSLEFT, std::to_wstring(x));
+	setItemText(IDC_EDIT_POSTOP, std::to_wstring(y));
 }
 
 void
@@ -339,6 +339,17 @@ Dialog::wndProc(UINT msg, WPARAM wParam, LPARAM lParam) {
 					GetWindowText((HWND)lParam, buffer, 50);
 					int top = _wtoi(buffer);
 					entry->setPosition(entry->left(), top);
+				}
+			}
+			break;
+		case IDC_EDIT_SCALE:
+			if (HIWORD(wParam) == EN_CHANGE && lParam != NULL) {
+				std::shared_ptr<ImageDescriptor> entry = getSelectedEntry();
+				if (entry != NULL) {
+					wchar_t buffer[51];
+					GetWindowText((HWND)lParam, buffer, 50);
+					int percent = _wtoi(buffer);
+					entry->setScale(percent / 100.0);
 				}
 			}
 			break;

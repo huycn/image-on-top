@@ -16,7 +16,7 @@ public:
 	ImageWidget(WindowClass &wndClass);
 	virtual ~ImageWidget();
 	
-	bool loadImage(const std::wstring &fileName, bool update = true);
+	bool loadImage(const std::wstring &fileName, double scale, bool update = true);
 	bool loadByDescriptor(const ImageDescriptor &desctr);
 
 	unsigned int width() const;
@@ -26,7 +26,8 @@ public:
 	virtual void setTransparency(bool enable, unsigned char value) override;
 	virtual void enableClickThrough(bool enable) override;
 	virtual void setPosition(int left, int top) override;
-	virtual void fromString(const std::wstring &desc) override;
+	virtual void setScale(double scale) override;
+	virtual void fromString(const std::string &desc) override;
 
 	virtual void show(bool value = true) override;
 

@@ -83,7 +83,10 @@ WindowClass::run() {
 
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0)) {
-		if (!_wndManager->isDialogMessage(msg)) {
+		if (msg.message == WM_DROPFILES && _wndManager != nullptr) {
+			_wndManager->isDialogMessage(msg);
+		}
+		else if (_wndManager == nullptr || !_wndManager->isDialogMessage(msg)) {
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}

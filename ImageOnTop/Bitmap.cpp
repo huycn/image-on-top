@@ -43,7 +43,7 @@ getWindowsError(int err)
 
 namespace Swingl {
 
-Bitmap::Bitmap(const std::wstring& filePath) {
+Bitmap::Bitmap(const std::wstring& filePath, double scale) {
 	CComPtr<IWICImagingFactory> factory;
 	CHECK(CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)));
 
@@ -58,7 +58,17 @@ Bitmap::Bitmap(const std::wstring& filePath) {
 	CHECK(factory->CreateFormatConverter(&converter));
 	CHECK(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeCustom));
 
-	_source = converter;
+	if (std::abs(scale - 1.0) > 0.00001 && scale > 0.0) {
+		CComPtr<IWICBitmapScaler> scaler;
+		CHECK(factory->CreateBitmapScaler(&scaler));
+		_width = (UINT)std::round(_width * scale);
+		_height = (UINT)std::round(_height * scale);
+		CHECK(scaler->Initialize(converter, _width, _height, scale < 1.0 ? WICBitmapInterpolationModeFant : WICBitmapInterpolationModeHighQualityCubic));
+		_source = scaler;
+	}
+	else {
+		_source = converter;
+	}
 }
 
 Bitmap::~Bitmap() {

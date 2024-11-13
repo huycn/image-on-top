@@ -6,6 +6,8 @@
 #include "WindowClass.h"
 #include "Exception.h"
 
+#include <iostream>
+
 namespace Swingl {
 
 ImageWidget::ObjList ImageWidget::_imgObj;
@@ -39,9 +41,9 @@ ImageWidget::~ImageWidget() {
 }
 
 bool
-ImageWidget::loadImage(const std::wstring &fileName, bool update) {
+ImageWidget::loadImage(const std::wstring &fileName, double scale, bool update) {
 	for (ObjList::const_iterator it = _imgObj.begin(); it != _imgObj.end(); ++it) {
-		if (*it != this && (*it)->fileName() == fileName) {
+		if (*it != this && (*it)->fileName() == fileName && std::abs((*it)->scale() - scale) <= 0.00001) {
 			_bitmap = (*it)->getBitmap();
 			_fileName = fileName;
 			if (update) updateImage();
@@ -51,8 +53,11 @@ ImageWidget::loadImage(const std::wstring &fileName, bool update) {
 
 	_fileName = fileName;
 	try {
-		_bitmap = std::make_shared<Bitmap>(fileName);
+		_bitmap = std::make_shared<Bitmap>(fileName, scale);
 		return true;
+	}
+	catch (const std::exception& ex) {
+		std::cerr << ex.what();
 	}
 	catch (...) {
 
@@ -63,7 +68,7 @@ ImageWidget::loadImage(const std::wstring &fileName, bool update) {
 bool
 ImageWidget::loadByDescriptor(const ImageDescriptor &desctr) {
 	std::wstring fileName = desctr.fileName();
-	if (fileName.size() > 0 && loadImage(fileName, false)) {
+	if (fileName.size() > 0 && loadImage(fileName, desctr.scale(), false)) {
 		*(static_cast<ImageDescriptor *>(this)) = desctr;
 		updateImage();
 		updateClickThroughState();
@@ -118,7 +123,23 @@ ImageWidget::setPosition(int left, int top) {
 }
 
 void
-ImageWidget::fromString(const std::wstring &desc) {
+ImageWidget::setScale(double scale) {
+	if (std::abs(this->scale() - scale) <= 0.00001) {
+		return;
+	}
+	ImageDescriptor::setScale(scale);
+	if (_bitmap != nullptr) {
+		try {
+			_bitmap = std::make_shared<Bitmap>(_fileName, scale);
+			updateImage();
+		}
+		catch (...) {
+		}
+	}
+}
+
+void
+ImageWidget::fromString(const std::string &desc) {
 	ImageDescriptor desctr(desc);
 	loadByDescriptor(desctr);
 }

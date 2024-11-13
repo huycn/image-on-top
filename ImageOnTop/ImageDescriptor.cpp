@@ -1,11 +1,12 @@
 #include "ImageDescriptor.h"
 #include <string>
 #include <sstream>
+#include "json.hpp"
 
 namespace Swingl {
 
-ImageDescriptor::ImageDescriptor(const std::wstring &desc)
-: _isClickThrough(false), _transpEnabled(false), _transpValue(0), _posLeft(0), _posTop(0)
+ImageDescriptor::ImageDescriptor(const std::string &desc)
+: _isClickThrough(false), _transpEnabled(false), _transpValue(0), _posLeft(0), _posTop(0), _scale(1)
 {
 	if (!desc.empty()) {
 		fromString(desc);
@@ -46,32 +47,36 @@ ImageDescriptor::setPosition(int left, int top) {
 	_posTop = top;
 }
 
-std::wstring
+void
+ImageDescriptor::setScale(double scale) {
+	_scale = scale;
+}
+
+std::string
 ImageDescriptor::toString() const {
-	std::wostringstream output;
-	output << (int)_isClickThrough << std::endl
-		   << (int)_transpEnabled << std::endl
-		   << (int)_transpValue << std::endl
-		   << _posLeft << std::endl
-		   << _posTop << std::endl
-		   << _name << std::endl
-		   << _fileName << std::endl;
-	return output.str();
+	return nlohmann::json{
+		{"ct", _isClickThrough},
+		{"te", _transpEnabled},
+		{"tv", _transpValue},
+		{"px", _posLeft},
+		{"py", _posTop},
+		{"sc", _scale},
+		{"fn", _name},
+		{"fp", _fileName},
+	}.dump();
 }
 
 void
-ImageDescriptor::fromString(const std::wstring &desc) {
-	int isClickThrough = 0;
-	int transpEnabled = 0;
-	int transpValue = 0;
-	std::wistringstream input(desc);
-	input >> isClickThrough >> transpEnabled >> transpValue >> _posLeft >> _posTop;
-	std::getline(input, _name); // to remove endl
-	std::getline(input, _name);
-	std::getline(input, _fileName);
-	_isClickThrough = isClickThrough != 0;
-	_transpEnabled = transpEnabled != 0;
-	_transpValue = static_cast<unsigned char>(transpValue);
+ImageDescriptor::fromString(const std::string &desc) {
+	auto json = nlohmann::json::parse(desc);
+	json.at("ct").get_to(_isClickThrough);
+	json.at("te").get_to(_transpEnabled);
+	json.at("tv").get_to(_transpValue);
+	json.at("px").get_to(_posLeft);
+	json.at("py").get_to(_posTop);
+	json.at("sc").get_to(_scale);
+	json.at("fn").get_to(_name);
+	json.at("fp").get_to(_fileName);
 }
 
 }

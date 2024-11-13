@@ -211,14 +211,14 @@ ImageManager::loadPrefFromRegistry() {
 		result = RegQueryValueEx(myKey, TEXT("NbEntries"), 0, NULL, (LPBYTE)&nbEntries, &size);
 		if (result == ERROR_SUCCESS) {
 			const int bufferSize = MAX_PATH + 100;
-			wchar_t buffer[bufferSize];
+			char buffer[bufferSize];
 			wchar_t entryName[10];
 			for (int i = 0; i < nbEntries; ++i) {
 				wsprintf(entryName, TEXT("%d"), i);
-				DWORD bytesRead = (bufferSize - 1) * sizeof(wchar_t);
+				DWORD bytesRead = (bufferSize - 1) * sizeof(char);
 				result = RegQueryValueEx(myKey, entryName, 0, NULL, (LPBYTE)buffer, &bytesRead);
 				if (result == ERROR_SUCCESS) {
-					buffer[bytesRead] = wchar_t(0);
+					buffer[bytesRead] = '\0';
 					_imgList.push_back(std::make_shared<ImageDescriptor>(buffer));
 				}
 				result = ERROR_SUCCESS;
@@ -258,8 +258,8 @@ ImageManager::savePrefToRegistry() const {
 				RegSetValueEx(myKey, TEXT("NbEntries"), 0, REG_DWORD, (BYTE *)&nbEntries, sizeof(nbEntries));
 				for (int i=0; i<nbEntries; ++i) {
 					wsprintf(entryName, TEXT("%d"), i);
-					std::wstring value = _imgList[i]->toString();
-					result = RegSetValueEx(myKey, entryName, 0, REG_BINARY, (BYTE *)value.c_str(), ((int)value.size() + 1) * sizeof(wchar_t));
+					std::string value = _imgList[i]->toString();
+					result = RegSetValueEx(myKey, entryName, 0, REG_BINARY, (BYTE *)value.c_str(), ((int)value.size() + 1) * sizeof(char));
 				}
 				RegCloseKey(myKey);
 			}

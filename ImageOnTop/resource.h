@@ -29,6 +29,8 @@
 #define IDC_BUTTON_REMOVE               1020
 #define IDC_BUTTON1                     1022
 #define IDC_BUTTON_APPLY                1022
+#define IDC_STATIC_SCALE                1023
+#define IDC_EDIT_SCALE                  1024
 #define OFFSET_ID_TRAYICONMENU          40000
 #define ID_TRAYICONMENU_IMAGES          40000
 #define ID_TRAYICONMENU_ALWAYSONTOP     40001
@@ -41,7 +43,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        107
 #define _APS_NEXT_COMMAND_VALUE         40004
-#define _APS_NEXT_CONTROL_VALUE         1023
+#define _APS_NEXT_CONTROL_VALUE         1025
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
