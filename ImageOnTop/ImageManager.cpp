@@ -210,7 +210,7 @@ ImageManager::loadPrefFromRegistry() {
 		int nbEntries = 0;
 		result = RegQueryValueEx(myKey, TEXT("NbEntries"), 0, NULL, (LPBYTE)&nbEntries, &size);
 		if (result == ERROR_SUCCESS) {
-			const int bufferSize = MAX_PATH + 100;
+			const int bufferSize = 2048;
 			char buffer[bufferSize];
 			wchar_t entryName[10];
 			for (int i = 0; i < nbEntries; ++i) {
