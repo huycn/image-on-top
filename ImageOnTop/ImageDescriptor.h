@@ -16,6 +16,10 @@ public:
 	int left() const { return _posLeft; }
 	int top() const { return _posTop; }
 	double scale() const { return _scale; }
+	double cropLeft() const { return _crop[0]; }
+	double cropTop() const { return _crop[1]; }
+	double cropRight() const { return _crop[2]; }
+	double cropBottom() const { return _crop[3]; }
 
 	virtual void setName(const std::wstring& name);
 	virtual void setFileName(const std::wstring& fname);
@@ -24,6 +28,7 @@ public:
 	virtual void enableClickThrough(bool enable);
 	virtual void setPosition(int left, int top);
 	virtual void setScale(double scale);
+	virtual void setCropping(double left, double top, double right, double bottom);
 
 	virtual void fromString(const std::string &desc);
 	virtual std::string toString() const;
@@ -35,6 +40,7 @@ protected:
 	int _posLeft;
 	int _posTop;
 	double _scale;
+	double _crop[4];
 	std::wstring _name;
 	std::wstring _fileName;
 };

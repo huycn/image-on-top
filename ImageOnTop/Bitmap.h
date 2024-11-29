@@ -10,7 +10,7 @@ namespace Swingl {
 
 class Bitmap {
 public:
-    Bitmap(const std::wstring& filePath, double scale);
+    Bitmap(const std::wstring& filePath, double scale, double cropping[4]);
     ~Bitmap();
 
     unsigned int width() const { return _width; }

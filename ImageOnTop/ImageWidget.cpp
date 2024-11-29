@@ -41,19 +41,22 @@ ImageWidget::~ImageWidget() {
 }
 
 bool
-ImageWidget::loadImage(const std::wstring &fileName, double scale, bool update) {
+ImageWidget::loadImage() {
 	for (ObjList::const_iterator it = _imgObj.begin(); it != _imgObj.end(); ++it) {
-		if (*it != this && (*it)->fileName() == fileName && std::abs((*it)->scale() - scale) <= 0.00001) {
+		if (*it != this
+			&& (*it)->fileName() == _fileName
+			&& std::abs((*it)->scale() - _scale) <= 0.00001
+			&& std::abs((*it)->cropLeft() - _crop[0]) <= 0.00001
+			&& std::abs((*it)->cropTop() - _crop[1]) <= 0.00001
+			&& std::abs((*it)->cropRight() - _crop[2]) <= 0.00001
+			&& std::abs((*it)->cropBottom() - _crop[3]) <= 0.00001) {
 			_bitmap = (*it)->getBitmap();
-			_fileName = fileName;
-			if (update) updateImage();
 			return true;
 		}
 	}
 
-	_fileName = fileName;
 	try {
-		_bitmap = std::make_shared<Bitmap>(fileName, scale);
+		_bitmap = std::make_shared<Bitmap>(_fileName, _scale, _crop);
 		return true;
 	}
 	catch (const std::exception& ex) {
@@ -67,9 +70,8 @@ ImageWidget::loadImage(const std::wstring &fileName, double scale, bool update) 
 
 bool
 ImageWidget::loadByDescriptor(const ImageDescriptor &desctr) {
-	std::wstring fileName = desctr.fileName();
-	if (fileName.size() > 0 && loadImage(fileName, desctr.scale(), false)) {
-		*(static_cast<ImageDescriptor *>(this)) = desctr;
+	*(static_cast<ImageDescriptor*>(this)) = desctr;
+	if (_fileName.size() > 0 && loadImage()) {
 		updateImage();
 		updateClickThroughState();
 		return true;
@@ -127,16 +129,38 @@ ImageWidget::setScale(double scale) {
 	if (std::abs(this->scale() - scale) <= 0.00001) {
 		return;
 	}
+
 	ImageDescriptor::setScale(scale);
 	if (_bitmap != nullptr) {
 		try {
-			_bitmap = std::make_shared<Bitmap>(_fileName, scale);
+			_bitmap = std::make_shared<Bitmap>(_fileName, _scale, _crop);
 			updateImage();
 		}
 		catch (...) {
 		}
 	}
 }
+
+void
+ImageWidget::setCropping(double left, double top, double right, double bottom) {
+	if (std::abs(this->cropLeft() - left) <= 0.00001
+		&& std::abs(this->cropTop() - top) <= 0.00001
+		&& std::abs(this->cropRight() - right) <= 0.00001
+		&& std::abs(this->cropBottom() - bottom) <= 0.00001) {
+		return;
+	}
+
+	ImageDescriptor::setCropping(left, top, right, bottom);
+	if (_bitmap != nullptr) {
+		try {
+			_bitmap = std::make_shared<Bitmap>(_fileName, _scale, _crop);
+			updateImage();
+		}
+		catch (...) {
+		}
+	}
+}
+
 
 void
 ImageWidget::fromString(const std::string &desc) {

@@ -7,7 +7,7 @@
 namespace Swingl {
 
 ImageDescriptor::ImageDescriptor(const std::string &desc)
-: _isClickThrough(false), _transpEnabled(false), _transpValue(0), _posLeft(0), _posTop(0), _scale(1)
+: _isClickThrough(false), _transpEnabled(false), _transpValue(0), _posLeft(0), _posTop(0), _scale(1), _crop{0}
 {
 	if (!desc.empty()) {
 		fromString(desc);
@@ -51,6 +51,14 @@ ImageDescriptor::setPosition(int left, int top) {
 void
 ImageDescriptor::setScale(double scale) {
 	_scale = scale;
+}
+
+void
+ImageDescriptor::setCropping(double left, double top, double right, double bottom) {
+	_crop[0] = left;
+	_crop[1] = top;
+	_crop[2] = right;
+	_crop[3] = bottom;
 }
 
 std::string ToUtf8(std::wstring_view utf16_string)
@@ -100,6 +108,10 @@ ImageDescriptor::toString() const {
 		{"px", _posLeft},
 		{"py", _posTop},
 		{"sc", _scale},
+		{"bl", _crop[0]},
+		{"bt", _crop[1]},
+		{"br", _crop[2]},
+		{"bb", _crop[3]},
 		{"fn", ToUtf8(_name)},
 		{"fp", ToUtf8(_fileName)},
 	}.dump();
@@ -108,14 +120,18 @@ ImageDescriptor::toString() const {
 void
 ImageDescriptor::fromString(const std::string &desc) {
 	auto json = nlohmann::json::parse(desc);
-	json.at("ct").get_to(_isClickThrough);
-	json.at("te").get_to(_transpEnabled);
-	json.at("tv").get_to(_transpValue);
-	json.at("px").get_to(_posLeft);
-	json.at("py").get_to(_posTop);
-	json.at("sc").get_to(_scale);
-	_name = FromUtf8(json.at("fn").get<std::string>());
-	_fileName = FromUtf8(json.at("fp").get<std::string>());
+	_isClickThrough, json.value("ct", false);
+	_transpEnabled = json.value("te", false);
+	_transpValue = json.value("tv", (unsigned char)0);
+	_posLeft = json.value("px", 0);
+	_posTop = json.value("py", 0);
+	_scale = json.value("sc", 1.0);
+	_crop[0] = json.value("bl", 0.0);
+	_crop[1] = json.value("bt", 0.0);
+	_crop[2] = json.value("br", 0.0);
+	_crop[3] = json.value("bb", 0.0);
+	_name = FromUtf8(json.value("fn", std::string()));
+	_fileName = FromUtf8(json.value("fp", std::string()));
 }
 
 }

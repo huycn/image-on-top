@@ -41,9 +41,25 @@ getWindowsError(int err)
 	} \
 } while(0)
 
+static void applyCropping(WICRect& rect, double cropping[4]) {
+	double width = rect.Width;
+	double height = rect.Height;
+	rect.X = (INT)std::round(cropping[0] * width);
+	rect.Width -= rect.X;
+	if (rect.Width > std::round(cropping[2] * width)) {
+		rect.Width -= (INT)std::round(cropping[2] * width);
+	}
+
+	rect.Y = (INT)std::round(cropping[1] * height);
+	rect.Height -= rect.Y;
+	if (rect.Height > std::round(cropping[3] * height)) {
+		rect.Height -= (INT)std::round(cropping[3] * height);
+	}
+}
+
 namespace Swingl {
 
-Bitmap::Bitmap(const std::wstring& filePath, double scale) {
+Bitmap::Bitmap(const std::wstring& filePath, double scale, double cropping[4]) {
 	CComPtr<IWICImagingFactory> factory;
 	CHECK(CoCreateInstance(CLSID_WICImagingFactory, NULL, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&factory)));
 
@@ -58,16 +74,28 @@ Bitmap::Bitmap(const std::wstring& filePath, double scale) {
 	CHECK(factory->CreateFormatConverter(&converter));
 	CHECK(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA, WICBitmapDitherTypeNone, NULL, 0.f, WICBitmapPaletteTypeCustom));
 
+	_source = converter;
+
 	if (std::abs(scale - 1.0) > 0.00001 && scale > 0.0) {
 		CComPtr<IWICBitmapScaler> scaler;
 		CHECK(factory->CreateBitmapScaler(&scaler));
 		_width = (UINT)std::round(_width * scale);
 		_height = (UINT)std::round(_height * scale);
-		CHECK(scaler->Initialize(converter, _width, _height, scale < 1.0 ? WICBitmapInterpolationModeFant : WICBitmapInterpolationModeHighQualityCubic));
+		CHECK(scaler->Initialize(_source, _width, _height, scale < 1.0 ? WICBitmapInterpolationModeFant : WICBitmapInterpolationModeHighQualityCubic));
 		_source = scaler;
 	}
-	else {
-		_source = converter;
+
+	if (std::abs(cropping[0] - 1.0) > 0.00001 && cropping[0] > 0.0
+		|| std::abs(cropping[1] - 1.0) > 0.00001 && cropping[1] > 0.0
+		|| std::abs(cropping[2] - 1.0) > 0.00001 && cropping[2] > 0.0
+		|| std::abs(cropping[3] - 1.0) > 0.00001 && cropping[3] > 0.0) {
+
+		WICRect cropRect = { 0, 0, (INT)_width, (INT)_height };
+		applyCropping(cropRect, cropping);
+		CComPtr<IWICBitmapClipper> clipper;
+		CHECK(factory->CreateBitmapClipper(&clipper));
+		CHECK(clipper->Initialize(_source, &cropRect));
+		_source = clipper;
 	}
 }
 

@@ -31,6 +31,15 @@
 #define IDC_BUTTON_APPLY                1022
 #define IDC_STATIC_SCALE                1023
 #define IDC_EDIT_SCALE                  1024
+#define IDC_STATIC_CROP                 1025
+#define IDC_EDIT_CROPLEFT               1027
+#define IDC_EDIT_CROPTOP                1028
+#define IDC_EDIT_CROPRIGHT              1029
+#define IDC_EDIT_CROPBOTTOM             1030
+#define IDC_STATIC_CROPLEFT             1031
+#define IDC_STATIC_CROPTOP              1032
+#define IDC_STATIC_CROPRIGHT            1033
+#define IDC_STATIC_CROPBOTTOM           1034
 #define OFFSET_ID_TRAYICONMENU          40000
 #define ID_TRAYICONMENU_IMAGES          40000
 #define ID_TRAYICONMENU_ALWAYSONTOP     40001
@@ -43,7 +52,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        107
 #define _APS_NEXT_COMMAND_VALUE         40004
-#define _APS_NEXT_CONTROL_VALUE         1025
+#define _APS_NEXT_CONTROL_VALUE         1035
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
