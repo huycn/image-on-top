@@ -73,7 +73,6 @@ ImageWidget::loadByDescriptor(const ImageDescriptor &desctr) {
 	*(static_cast<ImageDescriptor*>(this)) = desctr;
 	if (_fileName.size() > 0 && loadImage()) {
 		updateImage();
-		updateClickThroughState();
 		return true;
 	}
 	return false;

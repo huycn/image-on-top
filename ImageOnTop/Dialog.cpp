@@ -219,8 +219,13 @@ Dialog::addEntry(const std::wstring &fileName) {
 		HWND hListItem = GetDlgItem(_handle, IDC_LIST_IMAGES);
 		LRESULT index = SendMessage(hListItem, LB_ADDSTRING, 0, (LPARAM)entry.name().c_str());
 		if (index != LB_ERR) {
-			if (wndMgr->insertEntry(entry, (int)index) >= 0) {
+			auto entryIndex = wndMgr->insertEntry(entry, (int)index);
+			if (entryIndex >= 0) {
 				SendMessage(hListItem, LB_SETCURSEL, (WPARAM)index, 0);
+				auto img = wndMgr->getEntry(entryIndex);
+				if (img != nullptr) {
+					img->enableClickThrough(false);
+				}
 				updateItemsState();
 			}
 			else {
